@@ -1,0 +1,154 @@
+{% extends 'admin/base.html' %}
+{% block content %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="container mt-3">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    <div class="row my-3">
+        <div class="col d-md-flex d-block">
+            <h1>Tambah Menu</h1>
+            <button class="btn btn-primary ms-auto">
+                <i class="bx bx-save bx-sm"></i>
+                Simpan Menu
+            </button>
+        </div>
+
+    </div>
+    <div class="row">
+        <div class="col-12 col-lg-6 mb-3">
+            <!-- Product Information -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="card-tile mb-0">Informasi Menu</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="ecommerce-product-name">Nama Menu</label>
+                        <input type="text" class="form-control" id="ecommerce-product-name" placeholder="Nama Menu"
+                            name="productTitle" aria-label="Product title">
+                    </div>
+                    <!-- Description -->
+                    <div class="mb-3">
+                        <label for="editor-content" class="form-label">Deskripsi Menu</label>
+                        <div contenteditable="true" class="form-control" id="editor-content" style="min-height: 150px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- /Product Information -->
+            <!-- Media -->
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 card-title">Gambar Menu</h5>
+                </div>
+                <div class="card-body">
+                    <div class="input-group">
+                        <input type="file" class="form-control" id="inputGroupFile04"
+                            aria-describedby="inputGroupFileAddon04" aria-label="Upload">
+                    </div>
+                </div>
+            </div>
+            <!-- /Media -->
+
+        </div>
+        <div class="col">
+            <!-- Variants -->
+            <!-- <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="card-title">Varian Menu</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-8">
+                            <input type="text" id="form-repeater-1-2" class="form-control"
+                                placeholder="Masukan Varian Menu">
+                        </div>
+                        <div class="col-4">
+                            <button class="btn btn-primary ">
+                                <i class="bx bx-plus bx-sm"></i>
+                                <span class="d-none">Varian</span> 
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div> -->
+            <!-- /Variants -->
+            <!-- Harga -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Harga Menu</h5>
+                </div>
+                <div class="card-body">
+                    <div data-repeater-list="group-a">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text">Rp</span>
+                            <input type="number" class="form-control" aria-label="Amount (to the nearest dollar)" placeholder="1000">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kategori -->
+            <div class="card">
+                <div class="card-header d-flex align-items-center">
+                    <h5 class="card-title mb-0">Kategori Menu</h5>
+                    <button class="btn btn-primary ms-auto" data-bs-toggle="modal" data-bs-target="#tambahKategoriModal">
+                        <i class="bx bx-plus bx-sm me-2"></i>Kategori
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="input-group mb-3">
+                        <label class="input-group-text" for="inputGroupSelect01">Options</label>
+                        <select class="form-select" id="inputGroupSelect01">
+                            <option selected>Choose...</option>
+                            {% for kategori in kategoris %}
+                                <option value="{{ kategori.id }}">{{ kategori.kategoriNama }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<form action="{{ url_for('admin.kategori',next=request.url) }}" method="POST" enctype="multipart/form-data">
+    <div class="modal fade" id="tambahKategoriModal" tabindex="-1" aria-labelledby="tambahKategoriLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tambahKategoriLabel">Tambah Kategori</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="kategoriNama" class="form-label">Nama Kategori</label>
+                            <input type="text" class="form-control" id="kategoriNama" name="kategoriNama"
+                                placeholder="Masukkan nama kategori">
+                        </div>
+                        <div class="mb-3">
+                            <label for="kategoriGambar" class="form-label">Gambar</label>
+                            <input type="file" class="form-control" id="kategoriGambar" name="kategoriGambar"
+                                aria-describedby="inputGroupFileAddon04" aria-label="Upload">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-primary">Simpan Kategori</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
