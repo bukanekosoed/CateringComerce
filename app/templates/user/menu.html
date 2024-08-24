@@ -1,108 +1,206 @@
 <!-- Fruits Shop Start -->
+{% if page == 'produk' %}
 <div class="container-fluid fruite">
     <div class="container py-5">
         <div class="tab-class text-center">
             <div class="row g-4">
-                <div class="col-lg-4 text-start">
-                    <h1>Our Organic Products</h1>
-                </div>
-                <div class="col-lg-8 text-end">
-                    <ul class="nav nav-pills d-inline-flex text-center mb-5">
-                        <li class="nav-item">
-                            <a class="d-flex m-2 py-2 bg-light rounded-pill active" data-bs-toggle="pill" href="#tab-1">
-                                <span class="text-dark" style="width: 130px;">All Products</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="d-flex py-2 m-2 bg-light rounded-pill" data-bs-toggle="pill" href="#tab-2">
-                                <span class="text-dark" style="width: 130px;">Vegetables</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="d-flex m-2 py-2 bg-light rounded-pill" data-bs-toggle="pill" href="#tab-3">
-                                <span class="text-dark" style="width: 130px;">Fruits</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="d-flex m-2 py-2 bg-light rounded-pill" data-bs-toggle="pill" href="#tab-4">
-                                <span class="text-dark" style="width: 130px;">Bread</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="d-flex m-2 py-2 bg-light rounded-pill" data-bs-toggle="pill" href="#tab-5">
-                                <span class="text-dark" style="width: 130px;">Meat</span>
-                            </a>
-                        </li>
-                    </ul>
+                <div class="col-lg-10 text-start">
+                    <h1>Produk Kami</h1>
                 </div>
             </div>
-            <div class="tab-content">
-                <div id="tab-1" class="tab-pane fade show p-0 active">
-                    <div class="row g-4">
-                        <div class="col-lg-12">
-                            <div class="row g-4">
-                                <!-- Product Item Start -->
-                                <div class="col-md-6 col-lg-4 col-xl-3">
-                                    <div class="rounded position-relative fruite-item">
-                                        <div class="fruite-img">
-                                            <img src="img/fruite-item-5.jpg" class="img-fluid w-100 rounded-top" alt="">
-                                        </div>
-                                        <div class="text-white bg-secondary px-3 py-1 rounded position-absolute" style="top: 10px; left: 10px;">Fruits</div>
-                                        <div class="p-4 border border-secondary border-top-0 rounded-bottom">
-                                            <h4>Grapes</h4>
-                                            <p>Lorem ipsum dolor sit amet consectetur adipisicing elit sed do eiusmod te incididunt</p>
-                                            <div class="d-flex justify-content-between flex-lg-wrap">
-                                                <p class="text-dark fs-5 fw-bold mb-0">$4.99 / kg</p>
-                                                <a href="#" class="btn border border-secondary rounded-pill px-3 text-primary" data-bs-toggle="modal" data-bs-target="#addToCartModal"><i class="fa fa-shopping-bag me-2 text-primary"></i> Add to cart</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- Product Item End -->
-                                <!-- Tambahkan item produk lainnya di sini -->
+            <div class="row g-4">
+
+
+                {% for produk in produk %}
+                <!-- Product Item Start -->
+                <div class="col-12 col-md-6 col-lg-3">
+                    <a href="">
+
+                        <div class="rounded position-relative fruite-item">
+                            <div class="fruite-img">
+                                <img src="{{ url_for('admin.image', image_id=produk.id) }}"
+                                    class="img-fluid rounded-top object-fit-cover w-100" style=" height: 200px;"
+                                    alt="{{produk.produkNama}}">
+                            </div>
+                            <div class="text-white bg-secondary px-3 py-1 rounded position-absolute"
+                                style="top: 10px; left: 10px;">{{produk.kategori.kategoriNama}}</div>
+                            <div class="p-4 border border-secondary border-top-0 rounded-bottom text-start">
+                                <h5>{{produk.produkNama}}</h5>
+                                <p class="text-dark fs-5 mb-0">{{produk.produkHarga | idr}}</p>
+
                             </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
-                <!-- Tambahkan tab lain di sini -->
+                <!-- Product Item End -->
+                {% endfor %}
             </div>
-        </div>      
+        </div>
     </div>
 </div>
 <!-- Fruits Shop End -->
+{% elif page == 'another' %}
+<!-- Fruits Shop Start-->
+<div class="container-fluid fruite">
+    <div class="container py-4">
+        <h1 class="mb-4">Menu Kami</h1>
+        <div class="row g-4">
+            <div class="col-lg-12">
+                <div class="row g-4">
+                    <div class="col-lg-3">
+                        <div class="row g-4">
+                            <div class="col-lg-12">
+                                <div class="mb-3">
+                                    <h4>Kategori</h4>
+                                    <ul class="list-unstyled fruite-categorie">
+                                        <li
+                                            class="{% if request.path == url_for('main.shop') and not request.args.get('kategori') %}bg-secondary py-1 px-2 rounded{% endif %}">
+                                            <a href="{{ url_for('main.shop') }}">
+                                                <div class="d-flex justify-content-between fruite-name">
+                                                    Semua Menu
+                                                    <span>({{ total_all_products }})</span>
+                                                </div>
+                                            </a>
+                                        </li>
+                                        {% for kategori in kategoris %}
+                                        <li
+                                            class="{% if request.args.get('kategori')|to_string == kategori.id|to_string %}bg-secondary py-1 px-2 rounded{% endif %}">
+                                            <a href="{{ url_for('main.shop', kategori=kategori.id) }}">
+                                                <div class="d-flex justify-content-between fruite-name">
+                                                    {{kategori.kategoriNama }}
+                                                    <span>({{ kategori_counts[kategori.id] }})</span>
+                                                </div>
+                                            </a>
+                                        </li>
 
-<!-- Add to Cart Modal -->
-<div class="modal fade" id="addToCartModal" tabindex="-1" aria-labelledby="addToCartModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="addToCartModalLabel">Add to Cart</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="col-lg-9">
+                        <div class="row g-4">
+                            {% for item in produk %}
+                            <div class="col-md-6 col-lg-6 col-xl-4">
+                                <a href="" class="text-decoration-none" data-bs-toggle="modal"
+                                    data-bs-target="#productModal{{ item.id }}">
+                                    <div class="rounded position-relative fruite-item">
+                                        <div class="fruite-img">
+                                            <img src="{{ url_for('admin.image', image_id=item.id) }}"
+                                                class="img-fluid rounded-top object-fit-cover w-100"
+                                                style="height: 200px;" alt="{{ item.produkNama }}">
+                                        </div>
+                                        <div class="p-4 border border-secondary border-top-0 rounded-bottom text-start">
+                                            <h5>{{ item.produkNama }}</h5>
+                                            <p class="text-dark fs-5 mb-0">{{ item.produkHarga | idr }}</p>
+                                        </div>
+                                        <div
+                                            class="position-absolute top-0 start-0 w-100 h-100 bg-transparent stretch-link">
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <!-- Product Detail Modal -->
+                            <div class="modal fade" id="productModal{{ item.id }}" tabindex="-1"
+                                aria-labelledby="productModalLabel{{ item.id }}" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-centered ">
+                                    <div class="modal-content position-relative">
+                                        <button type="button" class="btn-close position-absolute top-0 end-0 me-3 mt-3"
+                                            data-bs-dismiss="modal" aria-label="Close" style="z-index: 1;"></button>
+                                        <div class="modal-body">
+                                            <!-- Single Product Start -->
+
+
+                                            <div class="row g-4 py-5">
+                                                <div class="col-lg-6">
+                                                    <div class="border rounded">
+                                                        <img src="{{ url_for('admin.image', image_id=item.id) }}"
+                                                            class="img-fluid rounded" alt="Image">
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-6">
+                                                    <h4 class="fw-bold mb-3">{{item.produkNama}}</h4>
+                                                    <p class="mb-3">Kategori: {{item.kategori.kategoriNama}}</p>
+                                                    <h5 class="fw-bold mb-3">{{item.produkHarga | idr}}</h5>
+                                                    <!-- Variants Option Start -->
+                                                    {% if item.variantsNama %}
+                                                    <div class="mb-4">
+                                                        <label for="variant{{ item.id }}" class="form-label">Pilih
+                                                            Varian:</label>
+                                                        <select id="variant{{ item.id }}" class="form-select">
+                                                            {% for variant in item.variantsNama %}
+                                                            <option value="{{ variant }}">{{ variant }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    {% endif %}
+                                                    <div class="input-group quantity mb-5 w-50">
+                                                        <div class="input-group-btn">
+                                                            <button
+                                                                class="btn btn-sm btn-minus rounded-circle bg-danger text-white border">
+                                                                <i class='bx bx-minus'></i>
+                                                            </button>
+                                                        </div>
+                                                        <input type="text" inputmode="numeric"
+                                                            class="form-control text-center border-0"
+                                                            id="qty{{ item.id }}" value="{{ item.minPembelian }}"
+                                                            min="{{ item.minPembelian }}">
+                                                        <div class="input-group-btn">
+                                                            <button
+                                                                class="btn btn-sm btn-plus rounded-circle bg-primary text-white border"
+                                                                onclick="increaseQty()">
+                                                                <i class='bx bx-plus'></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <a href=""
+                                                        class="btn border border-secondary rounded-pill px-4 mb-2 text-primary">
+                                                        <i class="fa fa-shopping-bag me-2 text-primary"></i> Add
+                                                        to cart
+                                                    </a>
+                                                </div>
+                                            </div>
+
+
+                                            <!-- Single Product End -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {% endfor %}
+                        </div>
+                        <div class="col-12">
+                            <div class="pagination d-flex justify-content-center mt-5">
+                                {% if total_pages > 1 %}
+                                {% if current_page > 1 %}
+                                <a href="{{ url_for('main.shop', kategori=request.args.get('kategori'), page=current_page-1) }}"
+                                    class="rounded"><i class='bx bx-chevron-left'></i></a>
+                                {% endif %}
+                                {% for page_num in range(1, total_pages + 1) %}
+                                <a href="{{ url_for('main.shop', kategori=request.args.get('kategori'), page=page_num) }}"
+                                    class="{% if page_num == current_page %}active rounded{% else %}rounded{% endif %}">{{
+                                    page_num }}</a>
+                                {% endfor %}
+                                {% if current_page < total_pages %} <a
+                                    href="{{ url_for('main.shop', kategori=request.args.get('kategori'), page=current_page+1) }}"
+                                    class="rounded"><i class='bx bx-chevron-right'></i></a>
+                                    {% endif %}
+                                    {% endif %}
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="modal-body">
-          <form id="addToCartForm">
-            <div class="mb-3">
-              <label for="productName" class="form-label">Product</label>
-              <input type="text" class="form-control" id="productName" readonly>
-            </div>
-            <div class="mb-3">
-              <label for="productDescription" class="form-label">Description</label>
-              <textarea class="form-control" id="productDescription" rows="3" readonly></textarea>
-            </div>
-            <div class="mb-3">
-              <label for="productPrice" class="form-label">Price</label>
-              <input type="text" class="form-control" id="productPrice" readonly>
-            </div>
-            <div class="mb-3">
-              <label for="productQty" class="form-label">Quantity</label>
-              <input type="number" class="form-control" id="productQty" min="1" value="1">
-            </div>
-            <button type="submit" class="btn btn-primary">Add to Cart</button>
-          </form>
-        </div>
-      </div>
     </div>
-  </div>
-  
-  
+</div>
 
+<!-- Fruits Shop End-->
+
+{% endif %}

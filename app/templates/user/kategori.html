@@ -8,20 +8,20 @@
     </div>
 
     <div class="container overflow-hidden px-2">
-        <div class="row">
+        <div class="row row-cols-auto justify-content-around">
             {% for kategori in kategoris %}
-            <div class="col-4 col-sm-2 my-2 d-flex justify-content-center">
+            <div class="col my-2 d-flex ">
                 <div class="text-center">
-                    <div class="rounded-circle overflow-hidden d-inline-block" style="width: 100px; height: 100px;">
-                        <img src="{{ url_for('admin.image', image_id=kategori.id) }}" class="img-fluid" alt="Kategori Image" style="object-fit: cover; width: 100%; height: 100%;">
+                    <div class="card overflow-hidden position-relative"
+                        style="border: none; width: 100px; height: 100px;">
+                        <img src="{{ url_for('admin.image', image_id=kategori.id) }}" class="img-fluid"
+                            alt="{{ kategori.kategoriNama }}" style="object-fit: cover; width: 100%; height: 100%;">
+                        <a href="{{ url_for('main.shop', kategori=kategori.id) }}" class="stretched-link"></a>
                     </div>
-                    <a href="#" class="stretched-link mt-1 fs-6 text-decoration-none d-flex justify-content-center">
-                        <h5 class="text-dark mb-0">{{ kategori.kategoriNama
-                        }}</h5>
-                    </a>
+                    <h6 class="text-dark mt-1">{{ kategori.kategoriNama }}</h6>
                 </div>
             </div>
             {% endfor %}
-            
+
         </div>
     </div>
