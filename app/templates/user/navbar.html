@@ -26,14 +26,18 @@
             </form>
 
             <div class="d-flex ms-3">
-                
+
                 {% if session.get('user_id') %}
                 <!-- Display when logged in -->
                 <a href="#" class="position-relative me-4 my-auto">
                     <i class='bx bx-cart-alt fs-2'></i>
+                    {% if cart_count > 0 %}
                     <span
                         class="position-absolute bg-secondary rounded-circle d-flex align-items-center justify-content-center text-dark px-1"
-                        style="top: -7px; left: 20px; height: 20px; min-width: 20px;">3</span>
+                        style="top: -7px; left: 20px; height: 20px; min-width: 20px;">
+                        {{ cart_count }}
+                    </span>
+                    {% endif %}
                 </a>
                 <div class="dropdown my-auto d-lg-flex d-none">
                     <a href="#" role="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">

@@ -14,7 +14,8 @@
                 {% for produk in produk %}
                 <!-- Product Item Start -->
                 <div class="col-12 col-md-6 col-lg-3">
-                    <a href="">
+                    <a href="" data-bs-toggle="modal"
+                    data-bs-target="#productModal{{ produk.id }}">
 
                         <div class="rounded position-relative fruite-item">
                             <div class="fruite-img">
@@ -33,6 +34,65 @@
                     </a>
                 </div>
                 <!-- Product Item End -->
+
+                <!-- Product Modal -->
+                <div class="modal fade" id="productModal{{ produk.id }}" tabindex="-1"
+                    aria-labelledby="productModalLabel{{ produk.id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content position-relative">
+                            <button type="button" class="btn-close position-absolute top-0 end-0 me-3 mt-3"
+                                data-bs-dismiss="modal" aria-label="Close" style="z-index: 1;"></button>
+                            <div class="modal-body">
+                                <div class="row g-4 py-5">
+                                    <div class="col-lg-6">
+                                        <div class="border rounded">
+                                            <img src="{{ url_for('image.image', image_id=produk.id) }}"
+                                                class="img-fluid rounded" alt="{{ produk.produkNama }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6 text-start">
+                                        <h4 class="fw-bold mb-3">{{ produk.produkNama }}</h4>
+                                        <p class="mb-3">Kategori: {{ produk.kategori.kategoriNama }}</p>
+                                        <h5 class="fw-bold mb-3">{{ produk.produkHarga | idr }}</h5>
+                                        <!-- Variants Option Start -->
+                                        {% if produk.variantsNama %}
+                                        <div class="mb-4">
+                                            <label for="variant{{ produk.id }}" class="form-label">Pilih Varian:</label>
+                                            <select id="variant{{ produk.id }}" class="form-select">
+                                                {% for variant in produk.variantsNama %}
+                                                <option value="{{ variant }}">{{ variant }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        {% endif %}
+                                        <div class="input-group quantity mb-5 w-50">
+                                            <div class="input-group-btn">
+                                                <button
+                                                    class="btn btn-sm btn-minus rounded-circle bg-danger text-white border">
+                                                    <i class='bx bx-minus'></i>
+                                                </button>
+                                            </div>
+                                            <input type="text" inputmode="numeric"
+                                                class="form-control text-center border-0" id="qty{{ produk.id }}"
+                                                value="{{ produk.minPembelian }}" min="{{ produk.minPembelian }}">
+                                            <div class="input-group-btn">
+                                                <button
+                                                    class="btn btn-sm btn-plus rounded-circle bg-primary text-white border"
+                                                    onclick="increaseQty()">
+                                                    <i class='bx bx-plus'></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <a href=""
+                                            class="btn border border-secondary rounded-pill px-4 mb-2 text-primary">
+                                            <i class='bx bx-cart-add'></i> Add to cart
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 {% endfor %}
             </div>
         </div>
@@ -43,7 +103,7 @@
 <!-- Fruits Shop Start-->
 <div class="container-fluid fruite">
     <div class="container py-4">
-        
+
         <div class="row g-4">
             <div class="col-lg-3 ">
                 <!-- Sticky Sidebar Start -->
@@ -52,7 +112,8 @@
                         <h1 class="mb-4 ">Menu Kami</h1>
                         <h4>Kategori</h4>
                         <ul class="list-unstyled fruite-categorie">
-                            <li class="{% if request.path == url_for('main.shop') and not request.args.get('kategori') %}bg-secondary py-1 px-2 rounded{% endif %}">
+                            <li
+                                class="{% if request.path == url_for('main.shop') and not request.args.get('kategori') %}bg-secondary py-1 px-2 rounded{% endif %}">
                                 <a href="{{ url_for('main.shop') }}">
                                     <div class="d-flex justify-content-between fruite-name">
                                         Semua Menu
@@ -61,7 +122,8 @@
                                 </a>
                             </li>
                             {% for kategori in kategoris %}
-                            <li class="{% if request.args.get('kategori')|to_string == kategori.id|to_string %}bg-secondary py-1 px-2 rounded{% endif %}">
+                            <li
+                                class="{% if request.args.get('kategori')|to_string == kategori.id|to_string %}bg-secondary py-1 px-2 rounded{% endif %}">
                                 <a href="{{ url_for('main.shop', kategori=kategori.id) }}">
                                     <div class="d-flex justify-content-between fruite-name">
                                         {{ kategori.kategoriNama }}
@@ -85,14 +147,15 @@
                             <div class="rounded position-relative fruite-item">
                                 <div class="fruite-img">
                                     <img src="{{ url_for('image.image', image_id=item.id) }}"
-                                        class="img-fluid rounded-top object-fit-cover w-100"
-                                        style="height: 200px;" alt="{{ item.produkNama }}">
+                                        class="img-fluid rounded-top object-fit-cover w-100" style="height: 200px;"
+                                        alt="{{ item.produkNama }}">
                                 </div>
                                 <div class="p-4 border border-secondary border-top-0 rounded-bottom text-start">
                                     <h5>{{ item.produkNama }}</h5>
                                     <p class="text-dark fs-5 mb-0">{{ item.produkHarga | idr }}</p>
                                 </div>
-                                <div class="position-absolute top-0 start-0 w-100 h-100 bg-transparent stretch-link"></div>
+                                <div class="position-absolute top-0 start-0 w-100 h-100 bg-transparent stretch-link">
+                                </div>
                             </div>
                         </a>
                     </div>
@@ -119,7 +182,8 @@
                                             <!-- Variants Option Start -->
                                             {% if item.variantsNama %}
                                             <div class="mb-4">
-                                                <label for="variant{{ item.id }}" class="form-label">Pilih Varian:</label>
+                                                <label for="variant{{ item.id }}" class="form-label">Pilih
+                                                    Varian:</label>
                                                 <select id="variant{{ item.id }}" class="form-select">
                                                     {% for variant in item.variantsNama %}
                                                     <option value="{{ variant }}">{{ variant }}</option>
@@ -129,21 +193,25 @@
                                             {% endif %}
                                             <div class="input-group quantity mb-5 w-50">
                                                 <div class="input-group-btn">
-                                                    <button class="btn btn-sm btn-minus rounded-circle bg-danger text-white border">
+                                                    <button
+                                                        class="btn btn-sm btn-minus rounded-circle bg-danger text-white border">
                                                         <i class='bx bx-minus'></i>
                                                     </button>
                                                 </div>
-                                                <input type="text" inputmode="numeric" class="form-control text-center border-0"
-                                                    id="qty{{ item.id }}" value="{{ item.minPembelian }}" min="{{ item.minPembelian }}">
+                                                <input type="text" inputmode="numeric"
+                                                    class="form-control text-center border-0" id="qty{{ item.id }}"
+                                                    value="{{ item.minPembelian }}" min="{{ item.minPembelian }}">
                                                 <div class="input-group-btn">
-                                                    <button class="btn btn-sm btn-plus rounded-circle bg-primary text-white border"
+                                                    <button
+                                                        class="btn btn-sm btn-plus rounded-circle bg-primary text-white border"
                                                         onclick="increaseQty()">
                                                         <i class='bx bx-plus'></i>
                                                     </button>
                                                 </div>
                                             </div>
-                                            <a href="" class="btn border border-secondary rounded-pill px-4 mb-2 text-primary">
-                                                <i class="fa fa-shopping-bag me-2 text-primary"></i> Add to cart
+                                            <a href=""
+                                                class="btn border border-secondary rounded-pill px-4 mb-2 text-primary">
+                                                <i class='bx bx-cart-add text-primary'></i></i> Add to cart
                                             </a>
                                         </div>
                                     </div>
@@ -162,13 +230,14 @@
                         {% endif %}
                         {% for page_num in range(1, total_pages + 1) %}
                         <a href="{{ url_for('main.shop', kategori=request.args.get('kategori'), page=page_num) }}"
-                            class="{% if page_num == current_page %}active rounded{% else %}rounded{% endif %}">{{ page_num }}</a>
+                            class="{% if page_num == current_page %}active rounded{% else %}rounded{% endif %}">{{
+                            page_num }}</a>
                         {% endfor %}
-                        {% if current_page < total_pages %}
-                        <a href="{{ url_for('main.shop', kategori=request.args.get('kategori'), page=current_page+1) }}"
+                        {% if current_page < total_pages %} <a
+                            href="{{ url_for('main.shop', kategori=request.args.get('kategori'), page=current_page+1) }}"
                             class="rounded"><i class='bx bx-chevron-right'></i></a>
-                        {% endif %}
-                        {% endif %}
+                            {% endif %}
+                            {% endif %}
                     </div>
                 </div>
             </div>

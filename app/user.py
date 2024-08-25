@@ -1,11 +1,29 @@
 from flask import Blueprint, render_template,request,redirect,flash,url_for,session
-from .models import Kategori,Produk, get_products_by_category, get_all_categories, get_product_count_by_category, get_total_product_count,get_all_products
+from .models import (Kategori,Produk, get_products_by_category, 
+                     get_all_categories, get_product_count_by_category, 
+                     get_total_product_count,get_all_products,
+                     Users, Cart
+                    )
 from .decorators import login_required, user_required
 from math import ceil
 from flask_login import current_user
 
 user_bp = Blueprint('main', __name__)
+
+@user_bp.context_processor
+def inject_cart_count():
+    cart_count = 0
+    user_id = session.get('user_id')  # Assuming you store user_id in session
     
+    if user_id:
+        user = Users.objects(id=user_id).first()
+        if user:
+            cart = Cart.objects(user=user).first()
+            if cart:
+                cart_count = sum(item.quantity for item in cart.items)
+    
+    return {'cart_count': cart_count}
+
 @user_bp.route('/')
 @user_required
 def index():
@@ -24,7 +42,7 @@ def index():
 def shop():
     kategori_id = request.args.get('kategori')  # Ambil parameter kategori dari query string
     page = int(request.args.get('page', 1))  # Ambil parameter page dari URL, default ke 1
-    limit = 12
+    limit = 6
     produk = []
     total_produk = 0
     if kategori_id:

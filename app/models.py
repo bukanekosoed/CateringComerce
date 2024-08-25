@@ -1,4 +1,8 @@
-from mongoengine import connect, Document, StringField, ImageField, IntField,ReferenceField,CASCADE,ListField,EmailField
+from mongoengine import (connect, Document, StringField, 
+                         ImageField, IntField,EmbeddedDocumentField,
+                         EmbeddedDocument,ReferenceField,
+                         CASCADE,ListField,EmailField
+                        )
 from dotenv import load_dotenv
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -46,7 +50,13 @@ class Admin(Document):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
     
+class CartItem(EmbeddedDocument):
+    product = ReferenceField(Produk, required=True)
+    quantity = IntField(required=True, min_value=1)
 
+class Cart(Document):
+    user = ReferenceField(Users, required=True, unique=True)
+    items = ListField(EmbeddedDocumentField(CartItem))
 
 def get_all_categories():
     return Kategori.objects()
