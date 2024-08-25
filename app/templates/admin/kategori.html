@@ -37,7 +37,7 @@
                                     <h5>{{ kategori.kategori.kategoriNama}}</h5>
                                 </td>
                                 <td>
-                                    <img src="{{ url_for('admin.image', image_id=kategori.kategori.id) }}" alt="{{ kategori.kategori.kategoriNama}}"
+                                    <img src="{{ url_for('image.image', image_id=kategori.kategori.id) }}" alt="{{ kategori.kategori.kategoriNama}}"
                                         class="img-thumbnail me-2" width="50">
                                 </td>
                                 <td>{{ kategori.total_menu }}</td>
@@ -117,7 +117,7 @@
                         <label for="editKategoriGambar" class="form-label">Gambar</label>
                         <input type="file" class="form-control" id="editKategoriGambar" name="kategoriGambar">
                     </div>
-                    <img src="{{ url_for('admin.image', image_id=kategori.kategori.id) }}" alt="Kategori Gambar"
+                    <img src="{{ url_for('image.image', image_id=kategori.kategori.id) }}" alt="Kategori Gambar"
                         class="img-thumbnail me-2" width="100">
                 </div>
                 <div class="modal-footer">

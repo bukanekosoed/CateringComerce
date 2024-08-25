@@ -41,7 +41,7 @@
                                     <h5 class="fw-bold">{{ produk.produkNama }}</h5>
                                     <h6>{{ produk.variantsNama | join(', ') }}</h6>
                                 </td>
-                                <td><img src="{{ url_for('admin.image', image_id=produk.id) }}"
+                                <td><img src="{{ url_for('image.image', image_id=produk.id) }}"
                                         alt="{{ produk.produkNama }}" class="img-thumbnail" width="50"></td>
                                 <td>{{ produk.kategori.kategoriNama }}</td>
                                 <td>{{ produk.produkHarga | idr }}</td>
@@ -136,24 +136,32 @@
                             </div>
                         </div>
                     </div>
-
-                    <div class="form-group mb-3">
-                        <label for="inputGroupSelect01">Kategori</label>
-                        <select class="form-select" id="inputGroupSelect01" name="productCategory" required>
-                            <option selected value="{{ produk.kategori.id }}">{{ produk.kategori.kategoriNama }}
-                            </option>
-                            {% for kategori in kategoris %}
-                            {% if kategori.id != produk.kategori.id %}
-                            <option value="{{ kategori.id }}">{{ kategori.kategoriNama }}</option>
-                            {% endif %}
-                            {% endfor %}
-                        </select>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="inputGroupSelect01">Kategori</label>
+                                <select class="form-select" id="inputGroupSelect01" name="productCategory" required>
+                                    <option selected value="{{ produk.kategori.id }}">{{ produk.kategori.kategoriNama }}
+                                    </option>
+                                    {% for kategori in kategoris %}
+                                    {% if kategori.id != produk.kategori.id %}
+                                    <option value="{{ kategori.id }}">{{ kategori.kategoriNama }}</option>
+                                    {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="minPembelian">Min Pembelian</label>
+                                <input type="number" class="form-control" id="minPembelian" name="minPembelian" value="{{ produk.minPembelian }}" required>
+                            </div>
+                        </div>
                     </div>
-
                     <div class="form-group mb-3">
                         <label for="productImg">Gambar Produk</label>
                         <input type="file" id="productImg" name="productImg" class="form-control">
-                        <img src="{{ url_for('admin.image', image_id=produk.id) }}" alt="Kategori Gambar"
+                        <img src="{{ url_for('image.image', image_id=produk.id) }}" alt="Kategori Gambar"
                             class="img-thumbnail mt-2" width="100">
                     </div>
 

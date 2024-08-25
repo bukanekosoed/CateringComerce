@@ -1,10 +1,13 @@
-from flask import Blueprint, render_template,request
+from flask import Blueprint, render_template,request,redirect,flash,url_for,session
 from .models import Kategori,Produk, get_products_by_category, get_all_categories, get_product_count_by_category, get_total_product_count,get_all_products
-from .decorators import login_required
+from .decorators import login_required, user_required
 from math import ceil
-user_bp = Blueprint('main', __name__)
+from flask_login import current_user
 
+user_bp = Blueprint('main', __name__)
+    
 @user_bp.route('/')
+@user_required
 def index():
     produk_list = list(Produk.objects.aggregate([{'$sample': {'size': 4}}]))
     
@@ -14,12 +17,14 @@ def index():
         
     return render_template('user/index.html', kategoris = Kategori.objects.all(),
                            produk = produk_list,page='produk')
+    
+
 
 @user_bp.route('/shop')
 def shop():
     kategori_id = request.args.get('kategori')  # Ambil parameter kategori dari query string
     page = int(request.args.get('page', 1))  # Ambil parameter page dari URL, default ke 1
-    limit = 6
+    limit = 12
     produk = []
     total_produk = 0
     if kategori_id:

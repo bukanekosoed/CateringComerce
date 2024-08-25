@@ -61,13 +61,15 @@ def login():
             session['user_id'] = str(user.id)
             session['user_role'] = 'user'
             flash('Login successful!', 'primary')
-            return redirect(url_for('main.index'))
+            next_url = session.pop('next_url', url_for('main.index'))
+            return redirect(next_url)
         
         if admin and admin.check_password(password):
             session['user_id'] = str(admin.id)
             session['user_role'] = 'admin'
-            flash('Login successful!', 'primary')
-            return redirect(url_for('admin.index'))
+            flash('Login successful!', 'success')
+            next_url = session.pop('next_url', url_for('admin.index'))
+            return redirect(next_url)
         
         flash('Invalid email or password.', 'danger')
             

@@ -6,11 +6,16 @@ from gridfs.errors import NoFile
 import io
 from .decorators import login_required, admin_required
 
-admin_bp = Blueprint('admin', __name__)
 
-@admin_bp.route('/')
+admin_bp = Blueprint('admin', __name__)
+@admin_bp.before_request
 @login_required
 @admin_required
+def before_request():
+    # This function will be executed before every request to ensure user is logged in and is an admin
+    pass
+
+@admin_bp.route('/')
 def index():
     return render_template('admin/index.html',kategoris = Kategori.objects.all())
 
@@ -73,6 +78,7 @@ def edit_produk(produk_id):
     produk = Produk.objects.get(id=produk_id)
     produk.produkNama = request.form.get('produkNama', produk.produkNama)
     produk.produkHarga = request.form.get('produkHarga', produk.produkHarga)
+    produk.minPembelian = request.form.get('minPembelian', produk.minPembelian)
     produk.kategori = Kategori.objects.get(id=request.form.get('productCategory'))
     produk.variantsNama  = [variant for variant in request.form.getlist('variant_name[]') if variant.strip()]
     if 'productImg' in request.files:
@@ -208,25 +214,3 @@ def delete_kategori(kategori_id):
     
         flash('Kategori dan gambar berhasil dihapus!', 'success')
     return redirect(url_for('admin.kategori'))
-
-
-@admin_bp.route('/image/<image_id>')
-def image(image_id):
-    try:
-        # Coba cari gambar di kategori
-        kategori = Kategori.objects(id=image_id).first()
-        if kategori and kategori.kategoriGambar:
-            image_stream = io.BytesIO(kategori.kategoriGambar.read())
-            return send_file(image_stream, mimetype=kategori.kategoriGambar.content_type)
-
-        # Jika tidak ditemukan di kategori, coba di produk
-        produk = Produk.objects(id=image_id).first()
-        if produk and produk.produkGambar:
-            image_stream = io.BytesIO(produk.produkGambar.read())
-            return send_file(image_stream, mimetype=produk.produkGambar.content_type)
-
-        # Jika gambar tidak ditemukan di kedua koleksi, return 404
-        abort(404, description="Image not found")
-    
-    except Exception as e:
-        return str(e)
