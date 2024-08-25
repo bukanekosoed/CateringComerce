@@ -42,7 +42,7 @@ def index():
 def shop():
     kategori_id = request.args.get('kategori')  # Ambil parameter kategori dari query string
     page = int(request.args.get('page', 1))  # Ambil parameter page dari URL, default ke 1
-    limit = 6
+    limit = 3
     produk = []
     total_produk = 0
     if kategori_id:
