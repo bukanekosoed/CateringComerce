@@ -3,11 +3,13 @@ from config import Config
 from flask_session import Session
 from flask_login import LoginManager
 from .models import Users, Admin
+from flask_pymongo import PyMongo
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
-
+    mongo = PyMongo(app)
+    Session(app)
     login_manager = LoginManager()
     login_manager.init_app(app)
 
@@ -28,9 +30,10 @@ def create_app():
             return admin
 
         return None
-
+    
+    
     # Setup session
-    Session(app)
+    
     @app.template_filter('idr')
     def idr_format(value):
         return f"Rp {value:,.0f}".replace(',', '.')

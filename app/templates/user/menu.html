@@ -14,8 +14,7 @@
                 {% for produk in produk %}
                 <!-- Product Item Start -->
                 <div class="col-12 col-md-6 col-lg-3">
-                    <a href="" data-bs-toggle="modal"
-                    data-bs-target="#productModal{{ produk.id }}">
+                    <a href="" data-bs-toggle="modal" data-bs-target="#productModal{{ produk.id }}">
 
                         <div class="rounded position-relative fruite-item">
                             <div class="fruite-img">
@@ -65,28 +64,31 @@
                                             </select>
                                         </div>
                                         {% endif %}
-                                        <div class="input-group quantity mb-5 w-50">
-                                            <div class="input-group-btn">
-                                                <button
-                                                    class="btn btn-sm btn-minus rounded-circle bg-danger text-white border">
-                                                    <i class='bx bx-minus'></i>
-                                                </button>
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div class="input-group quantity mb-2" style="width: 40%;">
+                                                <div class="input-group-btn">
+                                                    <button
+                                                        class="btn btn-sm btn-minus rounded-circle bg-danger text-white border">
+                                                        <i class='bx bx-minus'></i>
+                                                    </button>
+                                                </div>
+                                                <input type="text" inputmode="numeric"
+                                                    class="form-control text-center border-0" id="qty{{ produk.id }}"
+                                                    value="{{ produk.minPembelian }}" min="{{ produk.minPembelian }}">
+                                                <div class="input-group-btn">
+                                                    <button
+                                                        class="btn btn-sm btn-plus rounded-circle bg-primary text-white border"
+                                                        onclick="increaseQty()">
+                                                        <i class='bx bx-plus'></i>
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <input type="text" inputmode="numeric"
-                                                class="form-control text-center border-0" id="qty{{ produk.id }}"
-                                                value="{{ produk.minPembelian }}" min="{{ produk.minPembelian }}">
-                                            <div class="input-group-btn">
-                                                <button
-                                                    class="btn btn-sm btn-plus rounded-circle bg-primary text-white border"
-                                                    onclick="increaseQty()">
-                                                    <i class='bx bx-plus'></i>
-                                                </button>
-                                            </div>
+                                            <a href=""
+                                                class="btn border border-secondary rounded-pill justify-content-center w-50 mb-2 text-primary d-flex align-items-center">
+                                                <i class='bx bxs-cart-add fs-3 me-3'></i>
+                                                <span>Keranjang</span>
+                                            </a>
                                         </div>
-                                        <a href=""
-                                            class="btn border border-secondary rounded-pill px-4 mb-2 text-primary">
-                                            <i class='bx bx-cart-add'></i> Add to cart
-                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -147,14 +149,15 @@
                             <div class="rounded position-relative fruite-item">
                                 <div class="fruite-img">
                                     <img src="{{ url_for('image.image', image_id=item.id) }}"
-                                        class="img-fluid rounded-top object-fit-cover w-100" style="height: 200px;"
-                                        alt="{{ item.produkNama }}">
+                                        class="img-fluid rounded-top object-fit-cover w-100" style=" height: 200px;"
+                                        alt="{{item.produkNama}}">
                                 </div>
+                                <div class="text-white bg-secondary px-3 py-1 rounded position-absolute"
+                                    style="top: 10px; left: 10px;">{{item.kategori.kategoriNama}}</div>
                                 <div class="p-4 border border-secondary border-top-0 rounded-bottom text-start">
-                                    <h5>{{ item.produkNama }}</h5>
-                                    <p class="text-dark fs-5 mb-0">{{ item.produkHarga | idr }}</p>
-                                </div>
-                                <div class="position-absolute top-0 start-0 w-100 h-100 bg-transparent stretch-link">
+                                    <h5>{{item.produkNama}}</h5>
+                                    <p class="text-dark fs-5 mb-0">{{item.produkHarga | idr}}</p>
+    
                                 </div>
                             </div>
                         </a>
@@ -191,28 +194,32 @@
                                                 </select>
                                             </div>
                                             {% endif %}
-                                            <div class="input-group quantity mb-5 w-50">
-                                                <div class="input-group-btn">
-                                                    <button
-                                                        class="btn btn-sm btn-minus rounded-circle bg-danger text-white border">
-                                                        <i class='bx bx-minus'></i>
-                                                    </button>
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div class="input-group quantity mb-2" style="width: 40%;">
+                                                    <div class="input-group-btn">
+                                                        <button
+                                                            class="btn btn-sm btn-minus rounded-circle bg-danger text-white border">
+                                                            <i class='bx bx-minus'></i>
+                                                        </button>
+                                                    </div>
+                                                    <input type="text" inputmode="numeric"
+                                                        class="form-control text-center border-0" id="qty{{ item.id }}"
+                                                        value="{{ item.minPembelian }}" min="{{ item.minPembelian }}">
+                                                    <div class="input-group-btn">
+                                                        <button
+                                                            class="btn btn-sm btn-plus rounded-circle bg-primary text-white border"
+                                                            onclick="increaseQty()">
+                                                            <i class='bx bx-plus'></i>
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <input type="text" inputmode="numeric"
-                                                    class="form-control text-center border-0" id="qty{{ item.id }}"
-                                                    value="{{ item.minPembelian }}" min="{{ item.minPembelian }}">
-                                                <div class="input-group-btn">
-                                                    <button
-                                                        class="btn btn-sm btn-plus rounded-circle bg-primary text-white border"
-                                                        onclick="increaseQty()">
-                                                        <i class='bx bx-plus'></i>
-                                                    </button>
-                                                </div>
+                                                <a href=""
+                                                    class="btn border border-secondary rounded-pill justify-content-center w-50 mb-2 text-primary d-flex align-items-center">
+                                                    <i class='bx bxs-cart-add fs-3 me-3'></i>
+                                                    <span>Keranjang</span>
+                                                </a>
                                             </div>
-                                            <a href=""
-                                                class="btn border border-secondary rounded-pill px-4 mb-2 text-primary">
-                                                <i class='bx bx-cart-add text-primary'></i></i> Add to cart
-                                            </a>
+
                                         </div>
                                     </div>
                                 </div>
