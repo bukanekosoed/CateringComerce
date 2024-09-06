@@ -42,55 +42,61 @@
                             <button type="button" class="btn-close position-absolute top-0 end-0 me-3 mt-3"
                                 data-bs-dismiss="modal" aria-label="Close" style="z-index: 1;"></button>
                             <div class="modal-body">
-                                <div class="row g-4 py-5">
-                                    <div class="col-lg-6">
-                                        <div class="border rounded">
-                                            <img src="{{ url_for('image.image', image_id=produk.id) }}"
-                                                class="img-fluid rounded" alt="{{ produk.produkNama }}">
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-6 text-start">
-                                        <h4 class="fw-bold mb-3">{{ produk.produkNama }}</h4>
-                                        <p class="mb-3">Kategori: {{ produk.kategori.kategoriNama }}</p>
-                                        <h5 class="fw-bold mb-3">{{ produk.produkHarga | idr }}</h5>
-                                        <!-- Variants Option Start -->
-                                        {% if produk.variantsNama %}
-                                        <div class="mb-4">
-                                            <label for="variant{{ produk.id }}" class="form-label">Pilih Varian:</label>
-                                            <select id="variant{{ produk.id }}" class="form-select">
-                                                {% for variant in produk.variantsNama %}
-                                                <option value="{{ variant }}">{{ variant }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                        {% endif %}
-                                        <div class="d-flex align-items-center justify-content-between">
-                                            <div class="input-group quantity mb-2" style="width: 40%;">
-                                                <div class="input-group-btn">
-                                                    <button
-                                                        class="btn btn-sm btn-minus rounded-circle bg-danger text-white border">
-                                                        <i class='bx bx-minus'></i>
-                                                    </button>
-                                                </div>
-                                                <input type="text" inputmode="numeric"
-                                                    class="form-control text-center border-0" id="qty{{ produk.id }}"
-                                                    value="{{ produk.minPembelian }}" min="{{ produk.minPembelian }}">
-                                                <div class="input-group-btn">
-                                                    <button
-                                                        class="btn btn-sm btn-plus rounded-circle bg-primary text-white border"
-                                                        onclick="increaseQty()">
-                                                        <i class='bx bx-plus'></i>
-                                                    </button>
-                                                </div>
+                                <form action="{{ url_for('main.add_to_cart', next=request.url) }}" method="post">
+                                    <input type="hidden" name="product_id" value="{{ produk.id }}">
+                                    <div class="row g-4 py-5">
+                                        <div class="col-lg-6">
+                                            <div class="border rounded">
+                                                <img src="{{ url_for('image.image', image_id=produk.id) }}"
+                                                    class="img-fluid rounded" alt="{{ produk.produkNama }}">
                                             </div>
-                                            <a href=""
-                                                class="btn border border-secondary rounded-pill justify-content-center w-50 mb-2 text-primary d-flex align-items-center">
-                                                <i class='bx bxs-cart-add fs-3 me-3'></i>
-                                                <span>Keranjang</span>
-                                            </a>
+                                        </div>
+                                        <div class="col-lg-6 text-start">
+                                            <h4 class="fw-bold mb-3">{{ produk.produkNama }}</h4>
+                                            <p class="mb-3">Kategori: {{ produk.kategori.kategoriNama }}</p>
+                                            <h5 class="fw-bold mb-3">{{ produk.produkHarga | idr }}</h5>
+                                            <!-- Variants Option Start -->
+                                            {% if produk.variantsNama %}
+                                            <div class="mb-4">
+                                                <label for="variant{{ produk.id }}" class="form-label">Pilih
+                                                    Varian:</label>
+                                                <select id="variant{{ produk.id }}" class="form-select">
+                                                    {% for variant in produk.variantsNama %}
+                                                    <option value="{{ variant }}">{{ variant }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            {% endif %}
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div class="input-group quantity mb-2" style="width: 40%;">
+                                                    <div class="input-group-btn">
+                                                        <button
+                                                            class="btn btn-sm btn-minus rounded-circle bg-danger text-white border"
+                                                            type="button" disabled>
+                                                            <i class='bx bx-minus'></i>
+                                                        </button>
+                                                    </div>
+                                                    <input type="number" inputmode="numeric"
+                                                        class="form-control text-center qty border-0"
+                                                        value="{{ produk.minPembelian }}" min="{{ produk.minPembelian }}"
+                                                        name="quantity">
+                                                    <div class="input-group-btn">
+                                                        <button
+                                                            class="btn btn-sm btn-plus rounded-circle bg-primary text-white border"
+                                                            type="button">
+                                                            <i class='bx bx-plus'></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <button type="submit"
+                                                    class="btn border border-secondary rounded-pill justify-content-center w-50 mb-2 text-primary d-flex align-items-center">
+                                                    <i class='bx bxs-cart-add fs-3 me-3'></i>
+                                                    <span>Keranjang</span>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -157,7 +163,7 @@
                                 <div class="p-4 border border-secondary border-top-0 rounded-bottom text-start">
                                     <h5>{{item.produkNama}}</h5>
                                     <p class="text-dark fs-5 mb-0">{{item.produkHarga | idr}}</p>
-    
+
                                 </div>
                             </div>
                         </a>
@@ -171,61 +177,68 @@
                                 <button type="button" class="btn-close position-absolute top-0 end-0 me-3 mt-3"
                                     data-bs-dismiss="modal" aria-label="Close" style="z-index: 1;"></button>
                                 <div class="modal-body">
-                                    <div class="row g-4 py-5">
-                                        <div class="col-lg-6">
-                                            <div class="border rounded">
-                                                <img src="{{ url_for('image.image', image_id=item.id) }}"
-                                                    class="img-fluid rounded" alt="{{ item.produkNama }}">
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-6">
-                                            <h4 class="fw-bold mb-3">{{ item.produkNama }}</h4>
-                                            <p class="mb-3">Kategori: {{ item.kategori.kategoriNama }}</p>
-                                            <h5 class="fw-bold mb-3">{{ item.produkHarga | idr }}</h5>
-                                            <!-- Variants Option Start -->
-                                            {% if item.variantsNama %}
-                                            <div class="mb-4">
-                                                <label for="variant{{ item.id }}" class="form-label">Pilih
-                                                    Varian:</label>
-                                                <select id="variant{{ item.id }}" class="form-select">
-                                                    {% for variant in item.variantsNama %}
-                                                    <option value="{{ variant }}">{{ variant }}</option>
-                                                    {% endfor %}
-                                                </select>
-                                            </div>
-                                            {% endif %}
-                                            <div class="d-flex align-items-center justify-content-between">
-                                                <div class="input-group quantity mb-2" style="width: 40%;">
-                                                    <div class="input-group-btn">
-                                                        <button
-                                                            class="btn btn-sm btn-minus rounded-circle bg-danger text-white border">
-                                                            <i class='bx bx-minus'></i>
-                                                        </button>
-                                                    </div>
-                                                    <input type="text" inputmode="numeric"
-                                                        class="form-control text-center border-0" id="qty{{ item.id }}"
-                                                        value="{{ item.minPembelian }}" min="{{ item.minPembelian }}">
-                                                    <div class="input-group-btn">
-                                                        <button
-                                                            class="btn btn-sm btn-plus rounded-circle bg-primary text-white border"
-                                                            onclick="increaseQty()">
-                                                            <i class='bx bx-plus'></i>
-                                                        </button>
-                                                    </div>
+                                    <form action="{{ url_for('main.add_to_cart', next=request.url) }}" method="post">
+                                        <input type="hidden" name="product_id" value="{{ item.id }}">
+                                        <div class="row g-4 py-5">
+                                            <div class="col-lg-6">
+                                                <div class="border rounded">
+                                                    <img src="{{ url_for('image.image', image_id=item.id) }}"
+                                                        class="img-fluid rounded" alt="{{ item.produkNama }}">
                                                 </div>
-                                                <a href=""
-                                                    class="btn border border-secondary rounded-pill justify-content-center w-50 mb-2 text-primary d-flex align-items-center">
-                                                    <i class='bx bxs-cart-add fs-3 me-3'></i>
-                                                    <span>Keranjang</span>
-                                                </a>
                                             </div>
+                                            <div class="col-lg-6">
+                                                <h4 class="fw-bold mb-3">{{ item.produkNama }}</h4>
+                                                <p class="mb-3">Kategori: {{ item.kategori.kategoriNama }}</p>
+                                                <h5 class="fw-bold mb-3">{{ item.produkHarga | idr }}</h5>
+                                                <!-- Variants Option Start -->
+                                                {% if item.variantsNama %}
+                                                <div class="mb-4">
+                                                    <label for="variant{{ item.id }}" class="form-label">Pilih
+                                                        Varian:</label>
+                                                    <select id="variant{{ item.id }}" class="form-select"
+                                                        name="variant">
+                                                        {% for variant in item.variantsNama %}
+                                                        <option value="{{ variant }}">{{ variant }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                {% endif %}
+                                                <div class="d-flex align-items-center justify-content-between">
+                                                    <div class="input-group quantity mb-2" style="width: 40%;">
+                                                        <div class="input-group-btn">
+                                                            <button
+                                                                class="btn btn-sm btn-minus rounded-circle bg-danger text-white border"
+                                                                type="button" disabled>
+                                                                <i class='bx bx-minus'></i>
+                                                            </button>
+                                                        </div>
+                                                        <input type="number" inputmode="numeric"
+                                                            class="form-control text-center qty border-0"
+                                                            value="{{ item.minPembelian }}"
+                                                            min="{{ item.minPembelian }}" name="quantity">
+                                                        <div class="input-group-btn">
+                                                            <button
+                                                                class="btn btn-sm btn-plus rounded-circle bg-primary text-white border"
+                                                                type="button">
+                                                                <i class='bx bx-plus'></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <button type="submit"
+                                                        class="btn border border-secondary rounded-pill justify-content-center w-50 mb-2 text-primary d-flex align-items-center">
+                                                        <i class='bx bxs-cart-add fs-3 me-3'></i>
+                                                        <span>Keranjang</span>
+                                                    </button>
+                                                </div>
 
+                                            </div>
                                         </div>
-                                    </div>
+                                    </form>
                                 </div>
                             </div>
                         </div>
                     </div>
+
                     {% endfor %}
                 </div>
                 <div class="col-12">
@@ -255,3 +268,58 @@
 <!-- Fruits Shop End-->
 
 {% endif %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+<script>
+    $(document).ready(function () {
+        function updateMinusButton(modalId) {
+            var input = $(`#${modalId} .qty`);
+            var minValue = parseInt(input.attr('min'));
+            var currentValue = parseInt(input.val());
+
+            if (currentValue <= minValue) {
+                $(`#${modalId} .btn-minus`).attr('disabled', true);
+            } else {
+                $(`#${modalId} .btn-minus`).attr('disabled', false);
+            }
+        }
+
+        // Setel tombol minus saat halaman dimuat
+        $('[id^=productModal]').each(function () {
+            var modalId = $(this).attr('id');
+            updateMinusButton(modalId);
+        });
+
+        // Event listener untuk tombol plus
+        $('.btn-plus').click(function () {
+            var input = $(this).closest('.quantity').find('.qty');
+            var currentValue = parseInt(input.val());
+
+
+            // Perbarui status tombol minus
+            var modalId = $(this).closest('.modal').attr('id');
+            updateMinusButton(modalId);
+        });
+
+        // Event listener untuk tombol minus
+        $('.btn-minus').click(function () {
+            var input = $(this).closest('.quantity').find('.qty');
+            var currentValue = parseInt(input.val());
+            if (currentValue > parseInt(input.attr('min'))) {
+                input.val(currentValue - 1);
+            }
+
+            // Perbarui status tombol minus
+            var modalId = $(this).closest('.modal').attr('id');
+            updateMinusButton(modalId);
+        });
+
+        // Tambahkan event listener untuk input perubahan manual oleh pengguna
+        $('.qty').on('input change', function () {
+            var modalId = $(this).closest('.modal').attr('id');
+            updateMinusButton(modalId);
+        });
+    });
+
+
+
+</script>

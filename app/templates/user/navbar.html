@@ -29,7 +29,7 @@
 
                 {% if session.get('user_id') %}
                 <!-- Display when logged in -->
-                <a href="#" class="position-relative me-4 my-auto">
+                <a href="{{url_for('main.cart')}}" class="position-relative me-4 my-auto">
                     <i class='bx bx-cart-alt fs-2'></i>
                     {% if cart_count > 0 %}
                     <span

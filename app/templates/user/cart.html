@@ -1,0 +1,273 @@
+{% extends 'user/base.html' %}
+{% block title %}
+Keranjang
+{% endblock %}
+{% set Navbar = True %}
+{% set footer = True %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+{% block content %}
+<div class="container py-5">
+    {% if cart_items %}
+
+    <div class="container mb-1">
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Cart Items Section -->
+                <div class="row">
+                    {% for items in cart_items %}
+                    <div class="col-md-12 mb-3">
+                        <div class="card shadow overflow-hidden position-relative">
+                            <form action="{{ url_for('main.cart_delete', product_id=items.product.id) }}" method="post">
+                                <button class="btn btn-danger rounded-circle position-absolute top-0 end-0 m-2"
+                                    type="submit">
+                                    <i class='bx bx-trash fs-6'></i>
+                                </button>
+                            </form>
+                            <div class="p-3 d-flex">
+                                <div class="flex-shrink-0">
+                                    <img class="rounded object-fit-cover h-100"
+                                        src="{{ url_for('image.image', image_id=items.product.id) }}"
+                                        alt="{{ items.product.produkNama }}" style="width: 100px; height: 100px;">
+                                </div>
+                                <div class="d-md-flex d-block flex-grow-1 justify-content-between ms-3 align-items-end">
+                                    <div class="d-block">
+                                        <h5 class="mb-1">{{ items.product.produkNama }}</h5>
+                                        <span class="fs-6">( {{ items.product.kategori.kategoriNama }} )</span>
+                                        {% if items.variant %}
+                                        <p class="mb-1">{{ items.variant }}</p>
+                                        {% endif %}
+                                        <p class="mb-1 ">{{ items.product.produkHarga | idr }}</p>
+                                        <p class="mb-0 fw-bold">Total: {{ (items.quantity * items.product.produkHarga) |
+                                            idr }}</p>
+                                    </div>
+                                    <!-- Quantity Input Section -->
+                                    <div class="d-block">
+                                        <!-- Decrement form -->
+                                        <form
+                                            action="{{ url_for('main.update_quantity', product_id=items.product.id) }}"
+                                            method="POST" class="d-inline">
+                                            <input type="hidden" name="action" value="decrement">
+                                            <input type="hidden" name="delivery_option" value="{{ delivery_option }}">
+                                            <button type="submit"
+                                                class="btn btn-sm rounded-pill btn-danger text-white border" {% if
+                                                items.quantity <=items.product.minPembelian %}disabled{% endif %}>
+                                                <i class='bx bx-minus'></i>
+                                            </button>
+                                        </form>
+
+                                        <!-- Quantity display/input -->
+                                        <form
+                                            action="{{ url_for('main.update_quantity', product_id=items.product.id) }}"
+                                            method="POST" class="d-inline">
+                                            <input type="hidden" name="action" value="update">
+                                            <input type="hidden" name="delivery_option" value="{{ delivery_option }}">
+                                            <input type="number" name="quantity" value="{{ items.quantity }}"
+                                                min="{{ items.product.minPembelian }}"
+                                                class="form-control text-center qty border-0 d-inline"
+                                                style="width: 60px;"
+                                                onkeypress="if(event.keyCode==13){this.form.submit();}">
+                                        </form>
+
+                                        <!-- Increment form -->
+                                        <form
+                                            action="{{ url_for('main.update_quantity', product_id=items.product.id) }}"
+                                            method="POST" class="d-inline">
+                                            <input type="hidden" name="action" value="increment">
+                                            <input type="hidden" name="delivery_option" value="{{ delivery_option }}">
+                                            <button type="submit"
+                                                class="btn btn-primary btn-sm rounded-pill text-white border">
+                                                <i class='bx bx-plus'></i>
+                                            </button>
+                                        </form>
+
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-lg-4 col-12 mb-5">
+                <div class="card shadow p-4 rounded-4 mb-5">
+                    <h4 class="card-title mb-3">Ringkasan Belanja</h4>
+                    <div class="mb-4">
+                        <!-- Delivery Option Form -->
+
+
+                        <!-- Totals Section -->
+                        <div class="d-flex justify-content-between text-lg">
+                            <small>Total :</small>
+                            <small id="grandTotal">{{ total_price | idr }}</small>
+                        </div>
+
+                        <div class="d-flex justify-content-between text-lg text-muted">
+                            <small>Biaya PPN (11%) :</small>
+                            <small id="ppnCost" class="text-end">{{ (total_price * 0.11) | idr }}</small>
+                        </div>
+
+                        <div class="border border-1 mb-4"></div>
+                        <!-- Grand Total Section -->
+                        <div class="d-flex justify-content-between text-lg fw-bold fs-4 text-black">
+                            <small>Grand Total :</small>
+                            <small id="grandTotal">{{ (total_price + (total_price * 0.11)) | idr }}</small>
+                        </div>
+
+                        <!-- Checkout Button -->
+                        <button class="btn btn-primary btn-lg w-100 mt-4" id="checkoutButton">
+                            Checkout ( {{ cart_items|length }} )
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <img src="{{ url_for('static', filename='img/empty-cart.png') }}" class="mb-4">
+                <h4 class="text-muted">Keranjang Kosong</h4>
+                <a href="{{ url_for('main.shop') }}" class="btn btn-primary mt-4">Belanja Sekarang</a>
+            </div>
+            {% endif %}
+        </div>
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+        <script>
+            // Initialize the map with a default location and zoom level
+            const map = L.map('map').setView([-6.876916, 109.047849], 10);
+
+            // Load the HD tile layer from Thunderforest
+            L.tileLayer('https://tile.thunderforest.com/atlas/{z}/{x}/{y}@2x.png?apikey=6aa02e5af5274e7abd8736a2f111edde', {
+                maxZoom: 20,
+                attribution: '&copy; <a href="https://tile.thunderforest.com/">Thunderforest</a>',
+                tileSize: 512,
+                zoomOffset: -1,
+            }).addTo(map);
+
+            let marker;
+
+            function getLocation() {
+                if (navigator.geolocation) {
+                    navigator.permissions.query({ name: 'geolocation' }).then(function (permissionStatus) {
+                        if (permissionStatus.state === 'granted' || permissionStatus.state === 'prompt') {
+                            navigator.geolocation.getCurrentPosition(showPosition, showError);
+                        } else {
+                            alert('Geolocation access has been denied. Please allow location access in your browser settings.');
+                        }
+
+                        permissionStatus.onchange = function () {
+                            if (this.state === 'granted') {
+                                navigator.geolocation.getCurrentPosition(showPosition, showError);
+                            } else if (this.state === 'denied') {
+                                alert('Geolocation access has been denied. Please allow location access in your browser settings.');
+                            }
+                        };
+                    });
+                } else {
+                    alert('Geolocation is not supported by this browser.');
+                }
+            }
+
+            function showPosition(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                map.setView([lat, lng], 17);
+
+                if (marker) {
+                    marker.setLatLng([lat, lng]).update();
+                } else {
+                    marker = L.marker([lat, lng], { draggable: true }).addTo(map)
+                        .bindPopup('Lokasi Anda Sekarang')
+                        .openPopup();
+                }
+
+                updateCoordinates(lat, lng);
+
+                marker.on('dragend', function (e) {
+                    const { lat, lng } = e.target.getLatLng();
+                    updateCoordinates(lat, lng);
+                });
+            }
+
+            function showError(error) {
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        alert('User denied the request for Geolocation.');
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        alert('Location information is unavailable.');
+                        break;
+                    case error.TIMEOUT:
+                        alert('The request to get user location timed out.');
+                        break;
+                    case error.UNKNOWN_ERROR:
+                        alert('An unknown error occurred.');
+                        break;
+                }
+            }
+
+            function updateCoordinates(lat, lng) {
+                document.getElementById('latitude').value = lat;
+                document.getElementById('longitude').value = lng;
+
+                // Check distance from default location
+                checkDistance(lat, lng);
+            }
+
+            function checkDistance(lat, lng) {
+                const defaultLat = -6.876916;
+                const defaultLng = 109.047849;
+                const url = `https://router.project-osrm.org/route/v1/driving/${defaultLng},${defaultLat};${lng},${lat}?overview=false`;
+
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        const distance = data.routes[0].distance; // Distance in meters
+                        const distanceInKm = distance / 1000;
+
+                        const saveButton = document.getElementById('saveAddressButton');
+
+                        if (distanceInKm > 70) {
+                            saveButton.disabled = true;
+                            saveButton.classList.add('btn-secondary'); // Optional: Change button style to indicate it's disabled
+                            alert('Jarak dari lokasi toko lebih dari 70 km. Alamat tidak dapat disimpan.');
+                        } else {
+                            saveButton.disabled = false;
+                            saveButton.classList.remove('btn-secondary'); // Optional: Restore original button style
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
+
+            map.on('click', function (e) {
+                const { lat, lng } = e.latlng;
+
+                if (marker) {
+                    marker.setLatLng([lat, lng]).update();
+                } else {
+                    marker = L.marker([lat, lng], { draggable: true }).addTo(map)
+                        .bindPopup('Lokasi Anda Sekarang')
+                        .openPopup();
+
+                    marker.on('dragend', function (e) {
+                        const { lat, lng } = e.target.getLatLng();
+                        updateCoordinates(lat, lng);
+                    });
+                }
+
+                updateCoordinates(lat, lng);
+            });
+
+            document.getElementById('addAddressModal').addEventListener('shown.bs.modal', function () {
+                map.invalidateSize();
+                getLocation();
+            });
+
+
+        </script>
+
+
+
+        {% endblock %}

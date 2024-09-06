@@ -1,7 +1,8 @@
 from mongoengine import (connect, Document, StringField, 
                          ImageField, IntField,EmbeddedDocumentField,
                          EmbeddedDocument,ReferenceField,
-                         CASCADE,ListField,EmailField
+                         CASCADE,ListField,EmailField,
+                         FloatField
                         )
 from dotenv import load_dotenv
 import os
@@ -53,10 +54,18 @@ class Admin(Document):
 class CartItem(EmbeddedDocument):
     product = ReferenceField(Produk, required=True)
     quantity = IntField(required=True, min_value=1)
+    variant = StringField()  # Optional field
 
 class Cart(Document):
     user = ReferenceField(Users, required=True, unique=True)
     items = ListField(EmbeddedDocumentField(CartItem))
+
+class Address(Document):
+    user = ReferenceField(Users, required=True,)
+    latitude = FloatField(required=True)
+    longitude = FloatField(required=True)
+    full_address = StringField(required=True)
+    plus_code = StringField(required=True)
 
 def get_all_categories():
     return Kategori.objects()

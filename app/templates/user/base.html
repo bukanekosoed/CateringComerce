@@ -29,6 +29,10 @@
 
     <!-- Template Stylesheet -->
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    
 </head>
 
 <body>
@@ -174,6 +178,7 @@
     <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
     <script>
         $(document).ready(function () {
             // Function to start progress bar and remove the alert
@@ -191,6 +196,7 @@
                 startProgressBarAndRemoveAlert($(this));
             });
         });
+        
     </script>
 
 </body>
