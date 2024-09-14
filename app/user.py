@@ -12,11 +12,21 @@ from flask_login import current_user
 import midtransclient
 from dotenv import load_dotenv
 import os
+import time
+from midtransclient import Snap
 from openlocationcode import openlocationcode as olc
 
 load_dotenv()
 STORE_LATITUDE = os.getenv('STORE_LATITUDE')
 STORE_LONGITUDE = os.getenv('STORE_LONGITUDE')
+
+# Midtrans Client Initialization
+midtrans_client = Snap(
+    is_production=False,
+    server_key = os.getenv('MIDTRANS_SERVER_KEY'),
+    client_key = os.getenv('MIDTRANS_CLIENT_KEY')
+)
+
 user_bp = Blueprint('main', __name__)
 
 @user_bp.context_processor
@@ -73,9 +83,7 @@ def shop():
                            current_page=page,
                            page='another')
 
-@user_bp.route('/order')
-def order():
-    return render_template('user/index.html')
+
 
 @user_bp.route('/add-to-cart', methods=['POST'])
 def add_to_cart():
@@ -114,7 +122,7 @@ def add_to_cart():
 @user_bp.route('/cart', methods=['GET', 'POST'])
 def cart():
     user_id = session.get('user_id')
-    
+    client_key = os.getenv('MIDTRANS_CLIENT_KEY') 
     if not user_id:
         flash('User not logged in.', 'warning')
         return redirect(url_for('login'))  # Redirect to login if user is not logged in
@@ -122,30 +130,85 @@ def cart():
     # Fetch the user's cart
     user = Users.objects(id=user_id).first()
     user_cart = Cart.objects(user=user).first()
-
+    addresses = user.addresses
     if not user_cart or not user_cart.items:
         flash('Your cart is empty.', 'info')
         return render_template('user/cart.html', cart_items=[], total_price=0)
-
-
     
     total_price = sum(item.product.produkHarga * item.quantity for item in user_cart.items)
-
+    shipping_cost = 0 
+    
     return render_template('user/cart.html', cart_items=user_cart.items, total_price=total_price,
+                           shipping_cost=shipping_cost,addresses=addresses,client_key=client_key
                            )
 
 
-def get_driving_distance(lat1, lon1, lat2, lon2):
-    osrm_url = f'https://router.project-osrm.org/route/v1/driving/{lon1},{lat1};{lon2},{lat2}?overview=false'
-    response = requests.get(osrm_url)
-    data = response.json()
-    
-    if response.status_code == 200 and 'routes' in data and len(data['routes']) > 0:
-        distance = data['routes'][0]['distance']  # Distance in meters
-        distance_km = distance / 1000
-        return distance_km
+@user_bp.route('/update_delivery_option', methods=['POST'])
+def update_delivery_option():
+    BASE_FARE = 10000  # Base fare in IDR
+    COST_PER_KM = 3000  # Cost per kilometer in IDR
+    delivery_option = request.form.get('delivery_option')
+    address_index_str = request.form.get('address_index')
+    user_id = session.get('user_id')
+    user = Users.objects(id=user_id).first()
+    # Validate and parse address_index
+    if not address_index_str or not address_index_str.isdigit():
+        return jsonify({'error': 'Invalid address index'}), 400
+
+    address_index = int(address_index_str)
+
+    if delivery_option == 'delivery':
+        if address_index is not None:
+            
+
+            if not user:
+                return jsonify({'error': 'User not found'}), 404
+
+            addresses = user.addresses
+
+            if address_index < 0 or address_index >= len(addresses):
+                return jsonify({'error': 'Address index out of range'}), 404
+
+            address = addresses[address_index]
+
+            # Calculate distance using OSRM API
+            osrm_url = f'http://router.project-osrm.org/route/v1/driving/{STORE_LONGITUDE},{STORE_LATITUDE};{address.longitude},{address.latitude}'
+            response = requests.get(osrm_url)
+            data = response.json()
+
+            if 'routes' not in data or not data['routes']:
+                return jsonify({'error': 'Failed to calculate distance'}), 500
+
+            distance = data['routes'][0]['distance'] / 1000  # Convert meters to kilometers
+            shipping_cost = BASE_FARE + (COST_PER_KM * distance)  # Total cost
+            shipping_cost = round(shipping_cost, -2)
+            print(f"Distance: {distance:.2f} km")
+        else:
+            shipping_cost = 0  # Address index is required for delivery
+            return jsonify({'error': 'Address index is required for delivery'}), 400
+    elif delivery_option == 'pickup':
+        shipping_cost = 0  # No cost for pickup
     else:
-        return 0
+        return jsonify({'error': 'Invalid delivery option'}), 400
+
+    user_cart = Cart.objects(user=user).first()
+
+    if not user_cart:
+        return jsonify({'error': 'Cart not found'}), 404
+
+    # Calculate totals
+    cart_total = sum(item.product.produkHarga * item.quantity for item in user_cart.items)
+    vat = cart_total * 0.11
+    grand_total = cart_total + vat + shipping_cost
+
+    return jsonify({
+        'success': True,
+        'shipping_cost': shipping_cost,
+        'grand_total': grand_total,
+        
+    })
+
+
     
 @user_bp.route('/profile')
 @login_required
@@ -154,26 +217,26 @@ def profile():
 
 @user_bp.route('/cart/delete/<product_id>', methods=['POST'])
 def cart_delete(product_id):
-    # Mendapatkan user_id dari session
     user_id = session.get('user_id')
+    print(f"User ID from session: {user_id}")  # Debugging
 
-    # Mendapatkan user dan cart-nya
     user = Users.objects(id=user_id).first()
     user_cart = Cart.objects(user=user).first()
+    
+    print(f"User cart: {user_cart}")  # Debugging
 
-    # Mengecek apakah cart ada
     if not user_cart:
         flash('Cart not found.', 'error')
         return redirect(url_for('main.cart'))
 
-    # Mencari item yang ingin dihapus berdasarkan product_id
     item_to_delete = None
     for item in user_cart.items:
         if str(item.product.id) == product_id:
             item_to_delete = item
             break
+    
+    print(f"Item to delete: {item_to_delete}")  # Debugging
 
-    # Menghapus item dari cart jika ditemukan
     if item_to_delete:
         user_cart.items.remove(item_to_delete)
         user_cart.save()
@@ -183,35 +246,34 @@ def cart_delete(product_id):
 
     return redirect(url_for('main.cart'))
 
+
 @user_bp.route('/update_quantity/<product_id>', methods=['POST'])
 def update_quantity(product_id):
     user_id = session.get('user_id')
     if not user_id:
-        return redirect(url_for('login'))
+        return jsonify({'error': 'User not logged in'}), 401
 
     user = Users.objects(id=user_id).first()
     if not user:
-        return redirect(url_for('main.cart'))
+        return jsonify({'error': 'User not found'}), 404
 
     user_cart = Cart.objects(user=user).first()
     if not user_cart:
-        return redirect(url_for('main.cart'))
+        return jsonify({'error': 'Cart not found'}), 404
 
     action = request.form.get('action')
-    delivery_option = request.form.get('delivery_option', 'pickup')  # Default to 'pickup' if not provided
 
     # Find the item in the cart
     cart_item = next((item for item in user_cart.items if str(item.product.id) == product_id), None)
 
     if not cart_item:
-        return redirect(url_for('main.cart'))
+        return jsonify({'error': 'Cart item not found'}), 404
 
     if action == 'increment':
         cart_item.quantity += 1
     elif action == 'decrement' and cart_item.quantity > cart_item.product.minPembelian:
         cart_item.quantity -= 1
     elif action == 'update':
-        # Update the quantity based on the form input
         new_quantity = request.form.get('quantity')
         if new_quantity.isdigit():
             new_quantity = int(new_quantity)
@@ -220,8 +282,19 @@ def update_quantity(product_id):
 
     user_cart.save()
 
-    # Redirect back to the cart with the delivery_option preserved
-    return redirect(url_for('main.cart', delivery_option=delivery_option))
+    # Respond with the updated quantity and total
+    total_price = sum(item.quantity * item.product.produkHarga for item in user_cart.items)
+
+    return jsonify({
+        'quantity': cart_item.quantity,
+        'total_price': total_price,
+        'total_items': len(user_cart.items),
+        'grand_total': total_price + (total_price * 0.11),  # Including VAT
+        'ppn_cost': total_price * 0.11,  # VAT cost,
+        'total_cost': cart_item.quantity * cart_item.product.produkHarga
+        
+    })
+
 
 
 
@@ -231,6 +304,7 @@ def save_address():
     latitude = request.form.get('latitude')
     longitude = request.form.get('longitude')
     full_address = request.form.get('full_address')
+
     try:
         latitude = float(latitude)
         longitude = float(longitude)
@@ -238,27 +312,154 @@ def save_address():
         flash('Invalid latitude or longitude value.', 'danger')
         return redirect(url_for('main.cart'))
 
-    # Encode the latitude and longitude to a plus code
-    plus_code = olc.encode(latitude, longitude)
     if not latitude or not longitude or not full_address:
         flash('Semua kolom harus diisi.', 'danger')
         return redirect(url_for('main.cart'))
 
+    # Encode the latitude and longitude to a plus code
+    plus_code = olc.encode(latitude, longitude)
+
     address = Address(
-        user=user_id,
-        latitude=float(latitude),
-        longitude=float(longitude),
+        latitude=latitude,
+        longitude=longitude,
         full_address=full_address,
-        plus_code = plus_code
+        plus_code=plus_code
     )
-    address.save()
 
-    flash('Alamat berhasil disimpan.', 'success')
+    # Retrieve the user and add the address
+    user = Users.objects(id=user_id).first()
+    if user:
+        user.addresses.append(address)
+        user.save()
+        flash('Alamat berhasil disimpan.', 'success')
+    else:
+        flash('Pengguna tidak ditemukan.', 'danger')
+
     return redirect(url_for('main.cart'))
-# Midtrans Client Initialization
-midtrans_client = midtransclient.CoreApi(
-    is_production=False,
-    server_key = os.getenv('MIDTRANS_SERVER_KEY'),
-    client_key = os.getenv('MIDTRANS_CLIENT_KEY')
-)
 
+
+@user_bp.route('/create-transaction', methods=['POST'])
+def create_transaction():
+    user_id = session.get('user_id')
+    delivery_option = request.form.get('delivery_option')
+    address_index_str = request.form.get('address_index')
+
+    if not user_id:
+        flash('User not logged in.', 'warning')
+        return redirect(url_for('login'))
+
+    if not delivery_option:
+        flash('Delivery option not selected.', 'warning')
+        return redirect(url_for('main.cart'))
+
+    if delivery_option == 'delivery' and (address_index_str is None or not address_index_str.isdigit()):
+        flash('Valid address index is required for delivery.', 'warning')
+        return redirect(url_for('main.cart'))
+
+    address_index = int(address_index_str) if address_index_str else None
+
+    user = Users.objects(id=user_id).first()
+    user_cart = Cart.objects(user=user).first()
+
+    if not user_cart or not user_cart.items:
+        flash('Your cart is empty.', 'info')
+        return redirect(url_for('main.cart'))
+
+    cart_total = sum(item.product.produkHarga * item.quantity for item in user_cart.items)
+    vat = cart_total * 0.11
+
+    if delivery_option == 'delivery':
+        if address_index is not None:
+            addresses = user.addresses
+            if address_index < 0 or address_index >= len(addresses):
+                flash('Invalid address index.', 'danger')
+                return redirect(url_for('main.cart'))
+
+            address = addresses[address_index]
+
+            osrm_url = f'http://router.project-osrm.org/route/v1/driving/{STORE_LONGITUDE},{STORE_LATITUDE};{address.longitude},{address.latitude}'
+            response = requests.get(osrm_url)
+            data = response.json()
+            if 'routes' not in data or not data['routes']:
+                flash('Failed to calculate shipping distance.', 'danger')
+                return redirect(url_for('main.cart'))
+
+            distance = data['routes'][0]['distance'] / 1000
+            shipping_cost = 10000 + (3000 * distance)
+            shipping_cost = round(shipping_cost, -2)
+        else:
+            shipping_cost = 0
+    elif delivery_option == 'pickup':
+        shipping_cost = 0
+    else:
+        flash('Invalid delivery option.', 'danger')
+        return redirect(url_for('main.cart'))
+
+    grand_total = cart_total + vat + shipping_cost
+
+    midtrans_client = midtransclient.Snap(
+        is_production=False,
+        server_key=os.getenv('MIDTRANS_SERVER_KEY'),
+        client_key=os.getenv('MIDTRANS_CLIENT_KEY')
+    )
+
+    transaction_details = {
+        'order_id': f'order-{user_id}-{int(time.time())}',
+        'gross_amount': int(grand_total),
+    }
+
+    items = [
+        {
+            'id': str(item.product.id),
+            'price': item.product.produkHarga,
+            'quantity': item.quantity,
+            'name': item.product.produkNama,
+            'category': str(item.product.kategori),
+        }
+        for item in user_cart.items
+    ]
+
+    items.append({
+        'id': 'Biaya PPN (11%)',
+        'price': int(vat),
+        'quantity': 1,
+        'name': 'Biaya PPN (11%)',
+        'category': 'tax'
+    })
+
+    if shipping_cost > 0:
+        items.append({
+            'id': 'Ongkir',
+            'price': int(shipping_cost),
+            'quantity': 1,
+            'name': 'Ongkir',
+        })
+
+    customer_details = {
+        'first_name': user.name,
+        'email': user.email,
+        'phone': user.phone,
+        'billing_address': {
+            'address': user.addresses[address_index].full_address if delivery_option == 'delivery' else 'Pickup Location',
+            'city': 'Your City',
+            'postal_code': '12345',
+            'country_code': 'IDN'
+        }
+    }
+
+    transaction_data = {
+        'transaction_details': transaction_details,
+        'item_details': items,
+        'customer_details': customer_details,
+    }
+
+    try:
+        snap_response = midtrans_client.create_transaction(transaction_data)
+        return jsonify({'snap_token': snap_response['token']})
+    except midtransclient.errors.MidtransError as e:
+        flash(f'Failed to create transaction: {str(e)}', 'danger')
+        return jsonify({'error': 'Failed to create transaction'}), 500
+    
+@user_bp.route('/order')
+def order():
+    return render_template('user/order.html')

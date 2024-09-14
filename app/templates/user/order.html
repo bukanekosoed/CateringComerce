@@ -1,0 +1,99 @@
+{% extends 'user/base.html' %}
+{% block title %}
+Riwayat Pemesanan
+{% endblock %}
+{% set Navbar = True %}
+{% set footer = True %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Riwayat Pemesanan Saya</h2>
+
+    <!-- Card layout for order history -->
+    <div class="row">
+        <div class="col">
+            <div class="card mb-4 shadow-lg border-0 p-4">  <!-- Added padding with 'p-4' class -->
+                <div class="card-header bg-white d-flex justify-content-between align-items-center border-0">
+                    <div>
+                        <h5 class="card-title mb-0">Nomor Pesanan: ORD123456789</h5>
+                        <p class="card-text mb-0"><small class="text-muted">Tanggal Pemesanan: 01-09-2024</small></p>
+                    </div>
+                    <span class="badge bg-warning text-dark">Diproses</span>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-3 text-muted">Produk:</h6>
+                    <div class="product-list">
+                        <!-- Product 1 -->
+                        <div class="d-flex justify-content-start align-items-center mb-3">
+                            <img src="https://via.placeholder.com/70" alt="Produk 1" class="img-fluid rounded me-3">
+                            <div class="flex-grow-1">
+                                <p class="mb-1"><strong>Nama Produk 1</strong></p>
+                                <p class="mb-1 text-muted">Harga: Rp 100.000 / item</p>
+                                <p class="mb-1 text-muted">Qty: 2</p>
+                            </div>
+                            <div class="text-end">
+                                <p class="mb-1"><strong>Total: Rp 200.000</strong></p>
+                            </div>
+                        </div>
+
+                        <!-- Product 2 -->
+                        <div class="d-flex justify-content-start align-items-center mb-3">
+                            <img src="https://via.placeholder.com/70" alt="Produk 2" class="img-fluid rounded me-3">
+                            <div class="flex-grow-1">
+                                <p class="mb-1"><strong>Nama Produk 2</strong></p>
+                                <p class="mb-1 text-muted">Harga: Rp 75.000 / item</p>
+                                <p class="mb-1 text-muted">Qty: 1</p>
+                            </div>
+                            <div class="text-end">
+                                <p class="mb-1"><strong>Total: Rp 75.000</strong></p>
+                            </div>
+                        </div>
+
+                        <!-- Add more products as needed -->
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-0 d-flex justify-content-between align-items-center">
+                    <p class="mb-0">Total Harga: <strong>Rp 275.000</strong></p>
+                    <button class="btn btn-primary btn-sm">Lihat Detail</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Repeat the structure above for additional orders -->
+    <div class="row">
+        <div class="col">
+            <div class="card mb-4 shadow-lg border-0 p-4"> <!-- Added padding with 'p-4' class -->
+                <div class="card-header bg-white d-flex justify-content-between align-items-center border-0">
+                    <div>
+                        <h5 class="card-title mb-0">Nomor Pesanan: ORD987654321</h5>
+                        <p class="card-text mb-0"><small class="text-muted">Tanggal Pemesanan: 02-09-2024</small></p>
+                    </div>
+                    <span class="badge bg-success">Selesai</span>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-3 text-muted">Produk:</h6>
+                    <div class="product-list">
+                        <!-- Product 3 -->
+                        <div class="d-flex justify-content-start align-items-center mb-3">
+                            <img src="https://via.placeholder.com/70" alt="Produk 3" class="img-fluid rounded me-3">
+                            <div class="flex-grow-1">
+                                <p class="mb-1"><strong>Nama Produk 3</strong></p>
+                                <p class="mb-1 text-muted">1 x Rp 200.000</p>
+                                
+                            </div>
+                            <div class="text-end">
+                                <p class="mb-1"><strong>Total: Rp 200.000</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-0 d-flex justify-content-between align-items-center">
+                    <p class="mb-0">Total Harga: <strong>Rp 200.000</strong></p>
+                    <button class="btn btn-primary btn-sm">Lihat Detail</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

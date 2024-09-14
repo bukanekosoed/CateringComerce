@@ -6,6 +6,7 @@ Keranjang
 {% set footer = True %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
 {% block content %}
 <div class="container py-5">
     {% if cart_items %}
@@ -24,6 +25,7 @@ Keranjang
                                     <i class='bx bx-trash fs-6'></i>
                                 </button>
                             </form>
+
                             <div class="p-3 d-flex">
                                 <div class="flex-shrink-0">
                                     <img class="rounded object-fit-cover h-100"
@@ -38,18 +40,19 @@ Keranjang
                                         <p class="mb-1">{{ items.variant }}</p>
                                         {% endif %}
                                         <p class="mb-1 ">{{ items.product.produkHarga | idr }}</p>
-                                        <p class="mb-0 fw-bold">Total: {{ (items.quantity * items.product.produkHarga) |
+                                        <p id="total_{{ items.product.id }}" class="mb-0 fw-bold">Total: {{
+                                            (items.quantity *
+                                            items.product.produkHarga) |
                                             idr }}</p>
                                     </div>
                                     <!-- Quantity Input Section -->
                                     <div class="d-block">
                                         <!-- Decrement form -->
-                                        <form
+                                        <form id="form_decrement_{{ items.product.id }}"
                                             action="{{ url_for('main.update_quantity', product_id=items.product.id) }}"
                                             method="POST" class="d-inline">
                                             <input type="hidden" name="action" value="decrement">
-                                            <input type="hidden" name="delivery_option" value="{{ delivery_option }}">
-                                            <button type="submit"
+                                            <button type="submit" id="btndecrement"
                                                 class="btn btn-sm rounded-pill btn-danger text-white border" {% if
                                                 items.quantity <=items.product.minPembelian %}disabled{% endif %}>
                                                 <i class='bx bx-minus'></i>
@@ -57,30 +60,26 @@ Keranjang
                                         </form>
 
                                         <!-- Quantity display/input -->
-                                        <form
+                                        <form id="form_update_{{ items.product.id }}"
                                             action="{{ url_for('main.update_quantity', product_id=items.product.id) }}"
                                             method="POST" class="d-inline">
                                             <input type="hidden" name="action" value="update">
-                                            <input type="hidden" name="delivery_option" value="{{ delivery_option }}">
-                                            <input type="number" name="quantity" value="{{ items.quantity }}"
-                                                min="{{ items.product.minPembelian }}"
+                                            <input id="quantity_{{ items.product.id }}" type="number" name="quantity"
+                                                value="{{ items.quantity }}" min="{{ items.product.minPembelian }}"
                                                 class="form-control text-center qty border-0 d-inline"
-                                                style="width: 60px;"
-                                                onkeypress="if(event.keyCode==13){this.form.submit();}">
+                                                style="width: 100px;">
                                         </form>
 
                                         <!-- Increment form -->
-                                        <form
+                                        <form id="form_increment_{{ items.product.id }}"
                                             action="{{ url_for('main.update_quantity', product_id=items.product.id) }}"
                                             method="POST" class="d-inline">
                                             <input type="hidden" name="action" value="increment">
-                                            <input type="hidden" name="delivery_option" value="{{ delivery_option }}">
                                             <button type="submit"
                                                 class="btn btn-primary btn-sm rounded-pill text-white border">
                                                 <i class='bx bx-plus'></i>
                                             </button>
                                         </form>
-
                                     </div>
 
                                 </div>
@@ -92,33 +91,74 @@ Keranjang
             </div>
             <div class="col-lg-4 col-12 mb-5">
                 <div class="card shadow p-4 rounded-4 mb-5">
-                    <h4 class="card-title mb-3">Ringkasan Belanja</h4>
                     <div class="mb-4">
                         <!-- Delivery Option Form -->
+                        <div class="mb-4">
+                            <h5 class="mb-2">Pilih Metode Pengiriman</h5>
+                            <form id="deliveryOptionForm" method="POST"
+                                action="{{ url_for('main.create_transaction') }}">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="delivery_option"
+                                        id="pickup_store" value="pickup" checked>
+                                    <label class="form-check-label" for="pickup_store">
+                                        Ambil di Toko
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="delivery_option"
+                                        id="delivery_address" value="delivery">
+                                    <label class="form-check-label" for="delivery_address">
+                                        Kirim ke Alamat
+                                    </label>
+                                </div>
+                                <div id="address-selection" class="mt-3" style="display: none;">
+                                    <h5>Pilih Alamat</h5>
+                                    <select class="form-control" name="address_index" id="address-select">
+                                        {% for address in addresses %}
+                                        <option value="{{ loop.index0 }}">{{ address.full_address }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <!-- Add Address Button -->
+                                    <button type="button" class="btn btn-secondary w-100 mt-4" data-bs-toggle="modal"
+                                        data-bs-target="#addAddressModal">
+                                        Tambah Alamat
+                                    </button>
+                                </div>
 
+
+                        </div>
 
                         <!-- Totals Section -->
-                        <div class="d-flex justify-content-between text-lg">
-                            <small>Total :</small>
-                            <small id="grandTotal">{{ total_price | idr }}</small>
+                        <div class="d-flex justify-content-between ">
+                            <h6>Total :</h6>
+                            <h6 id="subtotal">{{ total_price | idr }}</h6>
                         </div>
 
                         <div class="d-flex justify-content-between text-lg text-muted">
-                            <small>Biaya PPN (11%) :</small>
-                            <small id="ppnCost" class="text-end">{{ (total_price * 0.11) | idr }}</small>
+                            <h6>Biaya PPN (11%) :</h6>
+                            <h6 id="ppnCost" class="text-end">{{ (total_price * 0.11) | idr }}</h6>
+                        </div>
+
+                        <div class="d-flex justify-content-between text-lg text-muted">
+                            <h6>Ongkir :</h6>
+                            <h6 id="shippingCost">{{ shipping_cost | idr}}</h6>
                         </div>
 
                         <div class="border border-1 mb-4"></div>
                         <!-- Grand Total Section -->
                         <div class="d-flex justify-content-between text-lg fw-bold fs-4 text-black">
-                            <small>Grand Total :</small>
-                            <small id="grandTotal">{{ (total_price + (total_price * 0.11)) | idr }}</small>
+                            <h5>Grand Total :</h5>
+                            <h5 id="grandTotal">{{ (total_price + (total_price * 0.11 + shipping_cost)) | idr }}</h5>
                         </div>
 
                         <!-- Checkout Button -->
+
                         <button class="btn btn-primary btn-lg w-100 mt-4" id="checkoutButton">
                             Checkout ( {{ cart_items|length }} )
                         </button>
+                        </form>
+
+
                     </div>
                 </div>
             </div>
@@ -130,8 +170,123 @@ Keranjang
             </div>
             {% endif %}
         </div>
+
+        <!-- Add Address Modal -->
+        <div class="modal fade" id="addAddressModal" tabindex="-1" aria-labelledby="addAddressModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addAddressModalLabel">Tambah Alamat</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form action="{{ url_for('main.save_address') }}" method="post">
+                        <div class="modal-body d-flex">
+                            <!-- Form Section -->
+                            <div class="me-3" style="flex: 1;">
+                                <div class="mb-3">
+                                    <label for="address_type" class="form-label">Jenis Alamat</label>
+                                    <input type="text" class="form-control" id="address_type" name="address_type"
+                                        placeholder="Rumah, Kantor, dll" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="street_name" class="form-label">Nama Jalan</label>
+                                    <input type="text" class="form-control" id="street_name" name="street_name"
+                                        placeholder="Nama Jalan" required>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="rt_rw" class="form-label">RT/RW</label>
+                                        <input type="text" class="form-control" id="rt_rw" name="rt_rw"
+                                            placeholder="RT/RW" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="village" class="form-label">Desa/Kelurahan</label>
+                                        <input type="text" class="form-control" id="village" name="village"
+                                            placeholder="Desa/Kelurahan" required>
+                                    </div>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="sub_district" class="form-label">Kecamatan</label>
+                                        <input type="text" class="form-control" id="sub_district" name="sub_district"
+                                            placeholder="Kecamatan" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="district" class="form-label">Kabupaten/Kota</label>
+                                        <input type="text" class="form-control" id="district" name="district"
+                                            placeholder="Kabupaten/Kota" required>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="latitude" name="latitude">
+                                <input type="hidden" id="longitude" name="longitude">
+                            </div>
+
+                            <!-- Map Section -->
+                            <div style="flex: 1;">
+                                <div id="map" style="height: 300px; width: 100%;"></div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                            <button type="submit" class="btn btn-primary" id="saveAddressButton">Simpan Alamat</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+
+
+
+
+
+
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+        <script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js"
+            data-client-key="SB-Mid-client-ZeSro0aAvX_ctrEe"></script>
+        <script type="text/javascript">
+            $(document).ready(function () {
+                $('#checkoutButton').on('click', function (event) {
+                    event.preventDefault(); // Prevent the default form submission
+
+                    $.ajax({
+                        url: '/create-transaction',
+                        type: 'POST',
+                        data: $('#deliveryOptionForm').serialize(), // Serialize form data
+                        success: function (response) {
+                            console.log('Response:', response); // Debug response
+
+                            if (response.snap_token) {
+                                console.log('Snap Token:', response.snap_token); // Debug Snap token
+                                snap.pay(response.snap_token, {
+                                    onSuccess: function (result) {
+                                        console.log('Payment success:', result);
+                                        alert('Payment successful!');
+                                    },
+                                    onPending: function (result) {
+                                        console.log('Payment pending:', result);
+                                        alert('Payment pending!');
+                                    },
+                                    onError: function (result) {
+                                        console.log('Payment error:', result);
+                                        alert('Payment failed!');
+                                    }
+                                });
+                            } else {
+                                alert('Failed to get payment token.');
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            console.error('AJAX Error:', error);
+                            alert('An error occurred while creating the transaction.');
+                        }
+                    });
+                });
+            });
+        </script>
 
         <script>
             // Initialize the map with a default location and zoom level
@@ -214,6 +369,23 @@ Keranjang
 
                 // Check distance from default location
                 checkDistance(lat, lng);
+
+                // Update city (kota) field based on coordinates
+                updateAddressFields(lat, lng);
+            }
+
+            function updateAddressFields(lat, lng) {
+                const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`;
+
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        const address = data.address;
+                        if (address) {
+                            document.getElementById('district').value = address.city  || address.county || '';
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
             }
 
             function checkDistance(lat, lng) {
@@ -264,9 +436,8 @@ Keranjang
                 map.invalidateSize();
                 getLocation();
             });
-
-
         </script>
+
 
 
 
