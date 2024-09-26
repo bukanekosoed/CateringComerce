@@ -32,16 +32,22 @@ user_bp = Blueprint('main', __name__)
 @user_bp.context_processor
 def inject_cart_count():
     cart_count = 0
-    user_id = session.get('user_id')  # Assuming you store user_id in session
+    cart_items = []  # Daftar untuk menyimpan item cart
+    user_id = session.get('user_id')  # Mengambil user_id dari session
     
     if user_id:
         user = Users.objects(id=user_id).first()
         if user:
             cart = Cart.objects(user=user).first()
             if cart:
-                 cart_count = len(cart.items)
+                cart_count = len(cart.items)
+                cart_items = cart.items  # Ambil semua item dari cart
     
-    return {'cart_count': cart_count}
+    return {
+        'cart_count': cart_count,
+        'cart_items': cart_items  # Mengembalikan item cart
+    }
+
 
 @user_bp.route('/')
 @user_required
@@ -56,6 +62,7 @@ def index():
                            produk = produk_list,page='produk')
     
 @user_bp.route('/shop')
+
 @user_required
 def shop():
     kategori_id = request.args.get('kategori')  # Ambil parameter kategori dari query string
@@ -86,6 +93,7 @@ def shop():
 
 
 @user_bp.route('/add-to-cart', methods=['POST'])
+@login_required
 def add_to_cart():
     product_id = request.form.get('product_id')
     quantity = int(request.form.get('quantity'))
@@ -120,6 +128,7 @@ def add_to_cart():
     return redirect(next_url or request.referrer or url_for('main.index'))
 
 @user_bp.route('/cart', methods=['GET', 'POST'])
+@login_required
 def cart():
     user_id = session.get('user_id')
     client_key = os.getenv('MIDTRANS_CLIENT_KEY') 
@@ -144,6 +153,7 @@ def cart():
 
 
 @user_bp.route('/update_delivery_option', methods=['POST'])
+@login_required
 def update_delivery_option():
     BASE_FARE = 10000  # Base fare in IDR
     COST_PER_KM = 3000  # Cost per kilometer in IDR
@@ -151,6 +161,7 @@ def update_delivery_option():
     address_index_str = request.form.get('address_index')
     user_id = session.get('user_id')
     user = Users.objects(id=user_id).first()
+
     # Validate and parse address_index
     if not address_index_str or not address_index_str.isdigit():
         return jsonify({'error': 'Invalid address index'}), 400
@@ -159,8 +170,6 @@ def update_delivery_option():
 
     if delivery_option == 'delivery':
         if address_index is not None:
-            
-
             if not user:
                 return jsonify({'error': 'User not found'}), 404
 
@@ -173,18 +182,29 @@ def update_delivery_option():
 
             # Calculate distance using OSRM API
             osrm_url = f'http://router.project-osrm.org/route/v1/driving/{STORE_LONGITUDE},{STORE_LATITUDE};{address.longitude},{address.latitude}'
-            response = requests.get(osrm_url)
-            data = response.json()
 
-            if 'routes' not in data or not data['routes']:
-                return jsonify({'error': 'Failed to calculate distance'}), 500
+            # Function to get route with retries
+            def get_route(osrm_url):
+                for attempt in range(3):  # Retry up to 3 times
+                    try:
+                        response = requests.get(osrm_url)
+                        response.raise_for_status()  # Raise an error for bad responses
+                        return response.json()
+                    except (requests.exceptions.RequestException, ValueError) as e:
+                        print(f"Attempt {attempt + 1} failed: {e}")
+                        time.sleep(2)  # Wait before retrying
+                return None  # Return None if all attempts fail
+
+            data = get_route(osrm_url)
+
+            if data is None or 'routes' not in data or not data['routes']:
+                return jsonify({'error': 'Failed to calculate distance or no route found'}), 500
 
             distance = data['routes'][0]['distance'] / 1000  # Convert meters to kilometers
             shipping_cost = BASE_FARE + (COST_PER_KM * distance)  # Total cost
             shipping_cost = round(shipping_cost, -2)
             print(f"Distance: {distance:.2f} km")
         else:
-            shipping_cost = 0  # Address index is required for delivery
             return jsonify({'error': 'Address index is required for delivery'}), 400
     elif delivery_option == 'pickup':
         shipping_cost = 0  # No cost for pickup
@@ -205,17 +225,14 @@ def update_delivery_option():
         'success': True,
         'shipping_cost': shipping_cost,
         'grand_total': grand_total,
-        
     })
-
-
-    
 @user_bp.route('/profile')
 @login_required
 def profile():
     return render_template('user/index.html')
 
 @user_bp.route('/cart/delete/<product_id>', methods=['POST'])
+@login_required
 def cart_delete(product_id):
     user_id = session.get('user_id')
     print(f"User ID from session: {user_id}")  # Debugging
@@ -248,6 +265,7 @@ def cart_delete(product_id):
 
 
 @user_bp.route('/update_quantity/<product_id>', methods=['POST'])
+@login_required
 def update_quantity(product_id):
     user_id = session.get('user_id')
     if not user_id:
@@ -299,12 +317,19 @@ def update_quantity(product_id):
 
 
 @user_bp.route('/save_address', methods=['POST'])
+@login_required
 def save_address():
     user_id = session.get('user_id')
+    address_type = request.form.get('address_type')
+    street_name = request.form.get('street_name')
+    rt_rw = request.form.get('rt_rw')
+    village = request.form.get('village')
+    sub_district = request.form.get('sub_district')
+    district = request.form.get('district')
     latitude = request.form.get('latitude')
     longitude = request.form.get('longitude')
-    full_address = request.form.get('full_address')
 
+    # Validate latitude and longitude
     try:
         latitude = float(latitude)
         longitude = float(longitude)
@@ -312,14 +337,24 @@ def save_address():
         flash('Invalid latitude or longitude value.', 'danger')
         return redirect(url_for('main.cart'))
 
-    if not latitude or not longitude or not full_address:
+    # Check if all fields are filled
+    if not (address_type and street_name and rt_rw and village and sub_district and district and latitude and longitude):
         flash('Semua kolom harus diisi.', 'danger')
         return redirect(url_for('main.cart'))
+
+    # Create full address string
+    full_address = f"{street_name}, RT {rt_rw}, {village}, {sub_district}, {district}"
 
     # Encode the latitude and longitude to a plus code
     plus_code = olc.encode(latitude, longitude)
 
     address = Address(
+        address_type=address_type,
+        street_name=street_name,
+        rt_rw=rt_rw,
+        village=village,
+        sub_district=sub_district,
+        district=district,
         latitude=latitude,
         longitude=longitude,
         full_address=full_address,
@@ -338,7 +373,9 @@ def save_address():
     return redirect(url_for('main.cart'))
 
 
+
 @user_bp.route('/create-transaction', methods=['POST'])
+@login_required
 def create_transaction():
     user_id = session.get('user_id')
     delivery_option = request.form.get('delivery_option')

@@ -35,10 +35,11 @@ Keranjang
                                 <div class="d-md-flex d-block flex-grow-1 justify-content-between ms-3 align-items-end">
                                     <div class="d-block">
                                         <h5 class="mb-1">{{ items.product.produkNama }}</h5>
-                                        <span class="fs-6">( {{ items.product.kategori.kategoriNama }} )</span>
-                                        {% if items.variant %}
-                                        <p class="mb-1">{{ items.variant }}</p>
-                                        {% endif %}
+                                        <span class="fs-6">( {{ items.product.kategori.kategoriNama }}
+                                            {% if items.variant %}
+                                            - {{ items.variant }}
+                                            {% endif %}
+                                            )</span>
                                         <p class="mb-1 ">{{ items.product.produkHarga | idr }}</p>
                                         <p id="total_{{ items.product.id }}" class="mb-0 fw-bold">Total: {{
                                             (items.quantity *
@@ -92,11 +93,27 @@ Keranjang
             <div class="col-lg-4 col-12 mb-5">
                 <div class="card shadow p-4 rounded-4 mb-5">
                     <div class="mb-4">
+
+
                         <!-- Delivery Option Form -->
                         <div class="mb-4">
-                            <h5 class="mb-2">Pilih Metode Pengiriman</h5>
                             <form id="deliveryOptionForm" method="POST"
                                 action="{{ url_for('main.create_transaction') }}">
+                                <!-- Select Delivery Date -->
+                                <div id="delivery-date-selection" class="mb-4">
+                                    <h5>Pilih Tanggal Pengiriman</h5>
+                                    <div class="input-group">
+                                        <input type="date" class="form-control" name="delivery_date" id="delivery-date"
+                                            required>
+                                        <select class="form-control" name="delivery_time" id="delivery-time" required>
+                                            <option value="">Pilih Jam Makan</option>
+                                            <option value="08:00">08:00 AM</option>
+                                            <option value="12:00">12:00 PM</option>
+                                            <option value="18:00">06:00 PM</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <h5 class="mb-2">Pilih Metode Pengiriman</h5>
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="delivery_option"
                                         id="pickup_store" value="pickup" checked>
@@ -115,7 +132,7 @@ Keranjang
                                     <h5>Pilih Alamat</h5>
                                     <select class="form-control" name="address_index" id="address-select">
                                         {% for address in addresses %}
-                                        <option value="{{ loop.index0 }}">{{ address.full_address }}</option>
+                                        <option value="{{ loop.index0 }}">{{ address.address_type }}</option>
                                         {% endfor %}
                                     </select>
                                     <!-- Add Address Button -->
@@ -236,12 +253,6 @@ Keranjang
             </div>
         </div>
 
-
-
-
-
-
-
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
@@ -286,10 +297,7 @@ Keranjang
                     });
                 });
             });
-        </script>
 
-        <script>
-            // Initialize the map with a default location and zoom level
             const map = L.map('map').setView([-6.876916, 109.047849], 10);
 
             // Load the HD tile layer from Thunderforest
@@ -382,7 +390,8 @@ Keranjang
                     .then(data => {
                         const address = data.address;
                         if (address) {
-                            document.getElementById('district').value = address.city  || address.county || '';
+                            document.getElementById('district').value = address.city || address.county || '';
+                            document.getElementById('sub_district').value = address.city || address.county || '';
                         }
                     })
                     .catch(error => console.error('Error:', error));
@@ -437,8 +446,4 @@ Keranjang
                 getLocation();
             });
         </script>
-
-
-
-
         {% endblock %}

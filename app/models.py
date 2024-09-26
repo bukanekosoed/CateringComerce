@@ -17,6 +17,12 @@ connect(db=db_name, host=mongo_uri)
 class Address(EmbeddedDocument):
     latitude = FloatField(required=True)
     longitude = FloatField(required=True)
+    address_type = StringField(required=True)
+    street_name = StringField(required=True)
+    rt_rw = StringField(required=True)
+    village = StringField(required=True)
+    sub_district = StringField(required=True)
+    district = StringField(required=True)
     full_address = StringField(required=True)
     plus_code = StringField(required=True)
 

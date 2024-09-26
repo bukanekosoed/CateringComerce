@@ -1,22 +1,30 @@
-from flask import Flask,render_template, session
+from flask import Flask, render_template, session
 from config import Config
-from flask_session import Session
 from flask_login import LoginManager
-from .models import Users, Admin
+from flask_session import Session
 from flask_pymongo import PyMongo
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    # Inisialisasi Flask-PyMongo
     mongo = PyMongo(app)
+
+    # Konfigurasi Flask-Session untuk MongoDB
+    app.config['SESSION_TYPE'] = 'mongodb'
+    app.config['SESSION_MONGODB'] = mongo.cx  # Instance MongoClient dari PyMongo
+    app.config['SESSION_MONGODB_DB'] = 'mydatabase'  # Nama database yang digunakan
+    app.config['SECRET_KEY'] = 'your_secret_key'  # Ganti dengan kunci rahasia Anda
+
+    # Inisialisasi Flask-Session
     Session(app)
+
+    # Inisialisasi Flask-Login
     login_manager = LoginManager()
     login_manager.init_app(app)
-
-    # Optionally set the login view if you want to redirect users who are not logged in
     login_manager.login_view = 'auth.login'
 
-    # This callback is used to reload the user object from the user ID stored in the session
     @login_manager.user_loader
     def load_user(user_id):
         # Try to load the user from Users collection
@@ -31,13 +39,11 @@ def create_app():
 
         return None
     
-    
-    # Setup session
-    
+    # Setup session filters
     @app.template_filter('idr')
     def idr_format(value):
         return f"Rp {value:,.0f}".replace(',', '.')
-    
+
     @app.template_filter('to_string')
     def to_string(value):
         return str(value)
@@ -45,8 +51,7 @@ def create_app():
     @app.errorhandler(404)
     def page_not_found(e):
         return render_template('404.html'), 404
-    
-   
+
     # Import and register blueprints
     from .auth import auth_bp
     from .user import user_bp

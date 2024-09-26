@@ -235,3 +235,73 @@ if ($('input[name="delivery_option"]:checked').val() === "delivery") {
   $("#address-selection").show();
 }
 
+// profile dropdown
+$(document).ready(function () {
+  $('#profileDropdown').hover(
+    function () {
+      $('.profileDropdown').stop(true, true).fadeIn(200); // Tampilkan dropdown saat hover
+      adjustDropdownPosition(); // Sesuaikan posisi dropdown
+    },
+    function () {
+      $('.profileDropdown').stop(true, true).fadeOut(200); // Sembunyikan dropdown saat tidak hover
+    }
+  );
+
+  $('.profileDropdown').hover(
+    function () {
+      $(this).stop(true, true).fadeIn(200); // Tetap tampilkan saat hover di dropdown
+    },
+    function () {
+      $(this).stop(true, true).fadeOut(200); // Sembunyikan saat mouse keluar
+    }
+  );
+
+  function adjustDropdownPosition() {
+    const dropdown = $('.profileDropdown');
+    const offset = dropdown.offset();
+    const windowHeight = $(window).height();
+
+    // Jika dropdown melebihi batas bawah viewport
+    if (offset.top + dropdown.outerHeight() > windowHeight) {
+      dropdown.css({ top: 'auto', bottom: '100%', left: '-100px' }); // Tampilkan di atas
+    } else {
+      dropdown.css({ top: '100%', bottom: 'auto', left: '-100px' }); // Tampilkan di bawah
+    }
+  }
+});
+
+// cart dropdown
+$(document).ready(function () {
+  $('#cartDropdown').hover(
+    function () {
+      $('.cartDropdown').stop(true, true).fadeIn(200); // Tampilkan dropdown saat hover
+      adjustDropdownPosition(); // Sesuaikan posisi dropdown
+    },
+    function () {
+      $('.cartDropdown').stop(true, true).fadeOut(200); // Sembunyikan dropdown saat tidak hover
+    }
+  );
+
+  $('.cartDropdown').hover(
+    function () {
+      $(this).stop(true, true).fadeIn(200); // Tetap tampilkan saat hover di dropdown
+    },
+    function () {
+      $(this).stop(true, true).fadeOut(200); // Sembunyikan saat mouse keluar
+    }
+  );
+
+  function adjustDropdownPosition() {
+    const dropdown = $('.cartDropdown');
+    const offset = dropdown.offset();
+    const windowHeight = $(window).height();
+
+    // Jika dropdown melebihi batas bawah viewport
+    if (offset.top + dropdown.outerHeight() > windowHeight) {
+      dropdown.css({ top: 'auto', bottom: '100%', left: '-100px' }); // Tampilkan di atas
+    } else {
+      dropdown.css({ top: '100%', bottom: 'auto', left: '-100px' }); // Tampilkan di bawah
+    }
+  }
+});
+
