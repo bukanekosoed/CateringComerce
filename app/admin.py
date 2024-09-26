@@ -214,3 +214,4 @@ def delete_kategori(kategori_id):
     
         flash('Kategori dan gambar berhasil dihapus!', 'success')
     return redirect(url_for('admin.kategori'))
+

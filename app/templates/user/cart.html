@@ -105,14 +105,11 @@ Keranjang
                                     <div class="input-group">
                                         <input type="date" class="form-control" name="delivery_date" id="delivery-date"
                                             required>
-                                        <select class="form-control" name="delivery_time" id="delivery-time" required>
-                                            <option value="">Pilih Jam Makan</option>
-                                            <option value="08:00">08:00 AM</option>
-                                            <option value="12:00">12:00 PM</option>
-                                            <option value="18:00">06:00 PM</option>
-                                        </select>
+                                        <input type="time" class="form-control" id="delivery-time" name="delivery_time"
+                                            placeholder="Pilih Jam Pengiriman" required>
                                     </div>
                                 </div>
+
                                 <h5 class="mb-2">Pilih Metode Pengiriman</h5>
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="delivery_option"
@@ -170,7 +167,7 @@ Keranjang
 
                         <!-- Checkout Button -->
 
-                        <button class="btn btn-primary btn-lg w-100 mt-4" id="checkoutButton">
+                        <button class="btn btn-primary btn-lg w-100 mt-4" id="checkoutButton" disabled>
                             Checkout ( {{ cart_items|length }} )
                         </button>
                         </form>
@@ -391,7 +388,7 @@ Keranjang
                         const address = data.address;
                         if (address) {
                             document.getElementById('district').value = address.city || address.county || '';
-                            document.getElementById('sub_district').value = address.city || address.county || '';
+
                         }
                     })
                     .catch(error => console.error('Error:', error));
@@ -445,5 +442,59 @@ Keranjang
                 map.invalidateSize();
                 getLocation();
             });
+
+            // Mendapatkan tanggal saat ini
+            const today = new Date();
+            today.setDate(today.getDate() + 3);
+            const dd = String(today.getDate()).padStart(2, '0');
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const yyyy = today.getFullYear();
+            const minDate = `${yyyy}-${mm}-${dd}`;
+
+            // Set atribut min pada input date
+            const deliveryDateInput = document.getElementById('delivery-date');
+            const deliveryTimeInput = document.getElementById('delivery-time');
+
+            // Disable input waktu di awal
+            deliveryTimeInput.disabled = true;
+
+            deliveryDateInput.setAttribute('min', minDate);
+
+            // Validasi input tanggal saat field kehilangan fokus (blur)
+            function validateDate() {
+                const selectedDate = new Date(deliveryDateInput.value);
+                const currentDate = new Date();
+                currentDate.setDate(currentDate.getDate() + 3); // 3 hari ke depan
+
+                // Validasi setelah tanggal dipilih
+                if (deliveryDateInput.value) {
+                    if (selectedDate < currentDate) {
+                        alert("Tanggal pengiriman harus lebih dari atau sama dengan 3 hari dari hari ini.");
+                        deliveryDateInput.value = ''; // Reset input tanggal
+                        deliveryTimeInput.disabled = true; // Disable kembali waktu jika tanggal tidak valid
+                    } else {
+                        // Enable input waktu jika tanggal valid
+                        deliveryTimeInput.disabled = false;
+                    }
+                }
+            }
+
+            // Validasi input waktu saat field kehilangan fokus (blur)
+            function validateTime() {
+                const timeValue = deliveryTimeInput.value;
+
+                if (timeValue) {
+                    const [hours, minutes] = timeValue.split(':').map(Number);
+                    if ((hours < 6 || hours > 19)) {
+                        alert("Waktu Pengiriman Hanya Pada 06:00 Sampai 19:00");
+                        deliveryTimeInput.value = ''; // Reset input waktu
+                    }
+                }
+            }
+
+            // Event listeners untuk validasi saat input kehilangan fokus (blur)
+            deliveryDateInput.addEventListener('blur', validateDate);
+            deliveryTimeInput.addEventListener('blur', validateTime);
+
         </script>
         {% endblock %}

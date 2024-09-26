@@ -3,7 +3,7 @@ import requests
 from .models import (Kategori,Produk, get_products_by_category, 
                      get_all_categories, get_product_count_by_category, 
                      get_total_product_count,get_all_products,
-                     Users, Cart,CartItem,Address
+                     Users, Cart,CartItem,Address,Orders
                     )
 from .decorators import login_required, user_required
 from math import ceil
@@ -226,6 +226,7 @@ def update_delivery_option():
         'shipping_cost': shipping_cost,
         'grand_total': grand_total,
     })
+
 @user_bp.route('/profile')
 @login_required
 def profile():
@@ -314,8 +315,6 @@ def update_quantity(product_id):
     })
 
 
-
-
 @user_bp.route('/save_address', methods=['POST'])
 @login_required
 def save_address():
@@ -380,7 +379,10 @@ def create_transaction():
     user_id = session.get('user_id')
     delivery_option = request.form.get('delivery_option')
     address_index_str = request.form.get('address_index')
+    delivery_date = request.form.get('delivery_date')  # Ambil tanggal pengiriman dari form
+    delivery_time = request.form.get('delivery_time')  # Ambil waktu pengiriman dari form
 
+    
     if not user_id:
         flash('User not logged in.', 'warning')
         return redirect(url_for('login'))
@@ -445,17 +447,19 @@ def create_transaction():
         'gross_amount': int(grand_total),
     }
 
+    # Mengumpulkan data items dalam bentuk dictionary
     items = [
         {
-            'id': str(item.product.id),
-            'price': item.product.produkHarga,
-            'quantity': item.quantity,
-            'name': item.product.produkNama,
-            'category': str(item.product.kategori),
+            'id': str(item.product.id),  # ID produk
+            'price': item.product.produkHarga,  # Harga
+            'quantity': item.quantity,  # Jumlah
+            'name': item.product.produkNama,  # Nama produk
+            'category': str(item.product.kategori)  # Kategori
         }
         for item in user_cart.items
     ]
 
+    # Menambahkan Biaya PPN (11%)
     items.append({
         'id': 'Biaya PPN (11%)',
         'price': int(vat),
@@ -464,12 +468,14 @@ def create_transaction():
         'category': 'tax'
     })
 
+    # Menambahkan Ongkir jika ada
     if shipping_cost > 0:
         items.append({
             'id': 'Ongkir',
             'price': int(shipping_cost),
             'quantity': 1,
             'name': 'Ongkir',
+            'category': 'shipping'  # Kategori
         })
 
     customer_details = {
@@ -477,9 +483,8 @@ def create_transaction():
         'email': user.email,
         'phone': user.phone,
         'billing_address': {
-            'address': user.addresses[address_index].full_address if delivery_option == 'delivery' else 'Pickup Location',
-            'city': 'Your City',
-            'postal_code': '12345',
+            'address': user.addresses[address_index].full_address if delivery_option == 'delivery' else 'Ambil Di Toko Langgeng Catering, Brebes',
+            'city': 'Jawa Tengah',
             'country_code': 'IDN'
         }
     }
@@ -492,11 +497,36 @@ def create_transaction():
 
     try:
         snap_response = midtrans_client.create_transaction(transaction_data)
+        
+
+        full_delivery_datetime = f"{delivery_date} {delivery_time}"
+        
+        # Simpan data pesanan ke database
+        new_order = Orders(
+            user=user,
+            delivery_option=delivery_option,
+            shipping_cost=shipping_cost,
+            vat=vat,
+            items=items,  
+            grand_total=grand_total,
+            order_id=transaction_details['order_id'],
+            delivery_date=full_delivery_datetime  # Simpan tanggal pengiriman
+        )
+         # Simpan daftar order items
+        new_order.save()  # Simpan order ke database
+        
+
+        # Hapus cart setelah transaksi berhasil
+        # user_cart.delete()
+        
         return jsonify({'snap_token': snap_response['token']})
-    except midtransclient.errors.MidtransError as e:
+    except Exception as e:  # Tangani semua kesalahan
         flash(f'Failed to create transaction: {str(e)}', 'danger')
+        
         return jsonify({'error': 'Failed to create transaction'}), 500
-    
+
+
+
 @user_bp.route('/order')
 def order():
     return render_template('user/order.html')

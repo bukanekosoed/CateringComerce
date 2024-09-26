@@ -2,10 +2,11 @@ from mongoengine import (connect, Document, StringField,
                          ImageField, IntField, EmbeddedDocumentField,
                          EmbeddedDocument, ReferenceField,
                          CASCADE, ListField, EmailField,
-                         FloatField
+                         FloatField, DictField
                         )
 from dotenv import load_dotenv
 import os
+import json
 from werkzeug.security import generate_password_hash, check_password_hash
 
 load_dotenv()
@@ -81,6 +82,19 @@ class Cart(Document):
     def get_grand_total(self):
         vat = self.get_cart_total() * 0.11
         return self.get_cart_total() + vat
+
+
+class Orders(Document):
+    user = ReferenceField(Users, required=True)
+    items = ListField(DictField())  # Menyimpan daftar item dalam format dictionary
+    delivery_option = StringField()
+    shipping_cost = IntField()
+    vat = IntField()
+    grand_total = IntField()
+    order_id = StringField()
+    delivery_date = StringField()
+    
+
 
 
 
