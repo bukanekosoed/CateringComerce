@@ -39,13 +39,41 @@
                             {{ cart_count }}
                         </span>
                         {% endif %}
-                        
-                            <ul  class="dropdown-menu dropdown-menu-end my-2 cartDropdown" >
-                                {%for items in cart_items%}
-                                    {{items}}
-                                {% endfor   %}
-                            </ul>
-                       
+
+                        <ul class="dropdown-menu dropdown-menu-end my-2 cartDropdown" style="width:300px; "
+                            id="cartDropdown">
+                            <li class="px-3 py-2 d-flex align-items-center">
+                                <h5 class="mb-0">Keranjang Saya ( {{ cart_items | length }} )</h5>
+                                <a href="{{url_for('main.cart')}}" class="ms-auto text-primary">Lihat</a> <!-- Right aligned "Lihat" -->
+                            </li>
+
+                            {% if cart_items %}
+                            {% for items in cart_items %}
+                            <li class="px-3 py-2">
+                                <div class="d-flex">
+                                    <img src="{{ url_for('image.image', image_id=items.product.id) }}" alt="Item 1"
+                                        class="img-fluid me-3 rounded" style="width: 60px; height: 60px;">
+                                    <div>
+                                        <h6 class="mb-0 fw-bold">{{items.product.produkNama}}</h6>
+                                        <small>{{items.quantity}} x {{items.product.produkHarga | idr }}</small>
+                                    </div>
+                                </div>
+                            </li>
+                            {% endfor %}
+                            {% else %}
+                            <li class="px-5 py-2 text-center">
+
+                                <div>
+                                    <h6 class="mb-0">Keranjang Masih Kosong Nih</h6>
+                                    <a href="{{ url_for('main.shop') }}" class="btn btn-primary mt-4">Belanja
+                                        Sekarang</a>
+                                </div>
+
+                            </li>
+                            {% endif %}
+                        </ul>
+
+
                     </a>
                 </div>
                 <div class="dropdown my-auto">
@@ -55,20 +83,20 @@
                         <span
                             class="position-absolute bg-secondary rounded-circle d-flex align-items-center justify-content-center text-dark px-1"
                             style="top: -18px; left: 20px; height: 20px; min-width: 20px;">
-    
+
                         </span>
                     </a>
                 </div>
                 <div class="dropdown my-auto d-lg-flex d-none">
-                    <a href="{{url_for('main.profile')}}"  id="profileDropdown" >
+                    <a href="{{url_for('main.profile')}}" id="profileDropdown">
                         <i class='bx bxs-user fs-2'></i>
                     </a>
 
-                    <ul class="dropdown-menu dropdown-menu-end my-2 profileDropdown" >
+                    <ul class="dropdown-menu dropdown-menu-end my-2 profileDropdown">
                         <li><a class="dropdown-item d-flex justify-content-between align-items-center"
                                 href="{{ url_for('main.profile') }}">Profile<i class='bx bx-user'></i></a></li>
                         <li><a class="dropdown-item d-flex justify-content-between align-items-center"
-                                href="#">Pesanan<i class='bx bx-receipt'></i></a></li>
+                                href="{{ url_for('main.order') }}">Pesanan<i class='bx bx-receipt'></i></a></li>
                         <li>
                             <hr class="dropdown-divider">
                         </li>

@@ -2,11 +2,11 @@ from mongoengine import (connect, Document, StringField,
                          ImageField, IntField, EmbeddedDocumentField,
                          EmbeddedDocument, ReferenceField,
                          CASCADE, ListField, EmailField,
-                         FloatField, DictField
+                         FloatField,  DateTimeField
                         )
 from dotenv import load_dotenv
 import os
-import json
+from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 
 load_dotenv()
@@ -85,15 +85,17 @@ class Cart(Document):
 
 
 class Orders(Document):
-    user = ReferenceField(Users, required=True)
-    items = ListField(DictField())  # Menyimpan daftar item dalam format dictionary
+    user = ReferenceField(Users, required=True)  # Allow multiple orders per user
+    order_id = StringField()
+    items = ListField(EmbeddedDocumentField(CartItem))  # Menyimpan daftar item dalam format dictionary
+    grand_total = IntField()
     delivery_option = StringField()
     shipping_cost = IntField()
     vat = IntField()
-    grand_total = IntField()
-    order_id = StringField()
     delivery_date = StringField()
-    
+    created_at = DateTimeField(default=datetime.utcnow)  # Automatically store the timestamp when the order is created
+    payment_status = StringField(default="pending")
+    token = StringField()
 
 
 

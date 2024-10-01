@@ -268,19 +268,26 @@ Keranjang
                             console.log('Response:', response); // Debug response
 
                             if (response.snap_token) {
-                                console.log('Snap Token:', response.snap_token); // Debug Snap token
                                 snap.pay(response.snap_token, {
                                     onSuccess: function (result) {
                                         console.log('Payment success:', result);
                                         alert('Payment successful!');
+                                        window.location.href = "{{ url_for('main.order') }}";
                                     },
                                     onPending: function (result) {
                                         console.log('Payment pending:', result);
                                         alert('Payment pending!');
+                                        window.location.href = "{{ url_for('main.order') }}";
                                     },
                                     onError: function (result) {
                                         console.log('Payment error:', result);
                                         alert('Payment failed!');
+                                    },
+                                    onClose: function () {
+                                        console.log('Payment popup closed.');
+                                        alert('Payment was not completed.');
+                                        // Redirect to order page when popup is closed
+                                        window.location.href = "{{ url_for('main.order') }}";
                                     }
                                 });
                             } else {
@@ -407,7 +414,7 @@ Keranjang
 
                         const saveButton = document.getElementById('saveAddressButton');
 
-                        if (distanceInKm > 70) {
+                        if (distanceInKm > 40) {
                             saveButton.disabled = true;
                             saveButton.classList.add('btn-secondary'); // Optional: Change button style to indicate it's disabled
                             alert('Jarak dari lokasi toko lebih dari 70 km. Alamat tidak dapat disimpan.');
@@ -464,8 +471,7 @@ Keranjang
             function validateDate() {
                 const selectedDate = new Date(deliveryDateInput.value);
                 const currentDate = new Date();
-                currentDate.setDate(currentDate.getDate() + 3); // 3 hari ke depan
-
+                currentDate.setDate(currentDate.getDate() + 2); // 3 hari ke depan
                 // Validasi setelah tanggal dipilih
                 if (deliveryDateInput.value) {
                     if (selectedDate < currentDate) {

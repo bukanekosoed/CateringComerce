@@ -12,7 +12,7 @@ from flask_login import current_user
 import midtransclient
 from dotenv import load_dotenv
 import os
-import time
+from datetime import datetime, timedelta
 from midtransclient import Snap
 from openlocationcode import openlocationcode as olc
 
@@ -373,6 +373,21 @@ def save_address():
 
 
 
+def to_roman(n):
+    if n == 0:
+        return "0"  # Menampilkan "0" untuk angka 0
+    roman_numerals = {
+    5000: 'ↁ', 1000: 'M', 900: 'CM', 500: 'D', 400: 'CD', 
+    100: 'C', 90: 'XC', 50: 'L', 40: 'XL', 10: 'X', 9: 'IX', 
+    5: 'V', 4: 'IV', 1: 'I'
+    }
+    result = ''
+    for value, numeral in roman_numerals.items():
+        while n >= value:
+            result += numeral
+            n -= value
+    return result
+
 @user_bp.route('/create-transaction', methods=['POST'])
 @login_required
 def create_transaction():
@@ -385,7 +400,7 @@ def create_transaction():
     
     if not user_id:
         flash('User not logged in.', 'warning')
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
 
     if not delivery_option:
         flash('Delivery option not selected.', 'warning')
@@ -442,8 +457,34 @@ def create_transaction():
         client_key=os.getenv('MIDTRANS_CLIENT_KEY')
     )
 
+    today = datetime.now().date()
+    year = datetime.now().year
+    year_end = datetime.now().month
+    roman_year = to_roman(year)
+    roman_month = to_roman(year_end)
+    # Get the current year and month for filtering by `created_at`
+    current_month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    current_month_end = (datetime.now().replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(seconds=1)
+
+    # Query the number of orders for the current month based on the `created_at` field
+    order_count_for_month = Orders.objects(created_at__gte=current_month_start, created_at__lt=current_month_end).count() + 1
+
+    while True:
+        # Menghasilkan order ID dengan counter bulanan
+        order_id = f'LanggengCatering/{today.strftime("%Y%m%d")}/{roman_year}/{roman_month}/{order_count_for_month}'
+
+        # Cek apakah order ID sudah ada
+        if not Orders.objects(order_id=order_id):
+            break  # ID unik, keluar dari loop
+
+        order_count_for_month += 1 
+
+
+    # You can now use the `count` variable for your transaction logic
+
+    
     transaction_details = {
-        'order_id': f'order-{user_id}-{int(time.time())}',
+        'order_id': order_id,
         'gross_amount': int(grand_total),
     }
 
@@ -504,20 +545,21 @@ def create_transaction():
         # Simpan data pesanan ke database
         new_order = Orders(
             user=user,
-            delivery_option=delivery_option,
-            shipping_cost=shipping_cost,
-            vat=vat,
-            items=items,  
-            grand_total=grand_total,
+            items = user_cart.items,
             order_id=transaction_details['order_id'],
-            delivery_date=full_delivery_datetime  # Simpan tanggal pengiriman
+            shipping_cost = shipping_cost,
+            vat = vat,
+            grand_total=grand_total,
+            delivery_option=delivery_option,
+            delivery_date=full_delivery_datetime,  # Simpan tanggal pengiriman
+            token = snap_response['token']
         )
          # Simpan daftar order items
         new_order.save()  # Simpan order ke database
         
 
         # Hapus cart setelah transaksi berhasil
-        # user_cart.delete()
+        user_cart.delete()
         
         return jsonify({'snap_token': snap_response['token']})
     except Exception as e:  # Tangani semua kesalahan
@@ -529,4 +571,24 @@ def create_transaction():
 
 @user_bp.route('/order')
 def order():
-    return render_template('user/order.html')
+    user_id = session.get('user_id')
+    if not user_id:
+        flash('User not logged in.', 'warning')
+        return redirect(url_for('auth.login'))  # Redirect to login if user is not logged in
+
+    # Fetch the user's cart
+    user = Users.objects(id=user_id).first()
+    orders = Orders.objects(user=user).order_by('-created_at')
+    return render_template('user/order.html',orders=orders)
+
+@user_bp.route('/payment/get_snap_token/<int:order_id>', methods=['GET'])
+def get_snap_token(order_id):
+    # Cari pesanan berdasarkan order_id
+    order = Orders.query.get(order_id)
+
+    if order and order.payment_status == 'pending':
+        # Ambil Snap token dari database
+        snap_token = order.token
+        return jsonify({'snap_token': snap_token})
+    else:
+        return jsonify({'error': 'Order not found or payment not pending'}), 404
