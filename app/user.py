@@ -13,6 +13,7 @@ import midtransclient
 from dotenv import load_dotenv
 import os
 from datetime import datetime, timedelta
+import pytz
 from midtransclient import Snap
 from openlocationcode import openlocationcode as olc
 
@@ -20,6 +21,7 @@ load_dotenv()
 STORE_LATITUDE = os.getenv('STORE_LATITUDE')
 STORE_LONGITUDE = os.getenv('STORE_LONGITUDE')
 
+gmt_plus_7 = pytz.timezone('Asia/Jakarta')
 # Midtrans Client Initialization
 midtrans_client = Snap(
     is_production=False,
@@ -466,8 +468,9 @@ def create_transaction():
     current_month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     current_month_end = (datetime.now().replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(seconds=1)
 
-    # Query the number of orders for the current month based on the `created_at` field
-    order_count_for_month = Orders.objects(created_at__gte=current_month_start, created_at__lt=current_month_end).count() + 1
+    # Replace 'created_at' with 'transaction_time' for date filtering
+    order_count_for_month = Orders.objects(transaction_time__gte=current_month_start, transaction_time__lt=current_month_end).count() + 1
+
 
     while True:
         # Menghasilkan order ID dengan counter bulanan
@@ -541,7 +544,12 @@ def create_transaction():
         
 
         full_delivery_datetime = f"{delivery_date} {delivery_time}"
-        
+        # Replace this with your time zone handling if needed
+        transaction_time = datetime.now(gmt_plus_7)
+
+        # Set expiry time (for example, 1 hour after transaction time)
+        expiry_time = transaction_time + timedelta(hours=1)
+
         # Simpan data pesanan ke database
         new_order = Orders(
             user=user,
@@ -552,11 +560,12 @@ def create_transaction():
             grand_total=grand_total,
             delivery_option=delivery_option,
             delivery_date=full_delivery_datetime,  # Simpan tanggal pengiriman
-            token = snap_response['token']
+            token = snap_response['token'],
+            transaction_time = transaction_time,
+            expiry_time=expiry_time 
         )
          # Simpan daftar order items
         new_order.save()  # Simpan order ke database
-        
 
         # Hapus cart setelah transaksi berhasil
         user_cart.delete()
@@ -592,3 +601,55 @@ def get_snap_token(order_id):
         return jsonify({'snap_token': snap_token})
     else:
         return jsonify({'error': 'Order not found or payment not pending'}), 404
+    
+@user_bp.route('/midtrans_webhook', methods=['POST'])
+def midtrans_webhook():
+    webhook_data = request.get_json()
+
+    if not webhook_data:
+        return jsonify({"error": "No data received"}), 400
+
+    order_id = webhook_data.get('order_id')
+    transaction_status = webhook_data.get('transaction_status')
+    payment_type = webhook_data.get('payment_type')
+    fraud_status = webhook_data.get('fraud_status')
+    settlement_time = webhook_data.get('settlement_time')
+
+    # Logika untuk memproses data webhook
+    if order_id:
+        # Cari pesanan berdasarkan order_id
+        order = Orders.objects(order_id=order_id).first()
+
+        if not order:
+            return jsonify({"error": "Order not found"}), 404
+
+        # Perbarui status pembayaran berdasarkan transaction_status dari Midtrans
+        if transaction_status == 'capture':
+            if payment_type == 'credit_card':
+                if fraud_status == 'challenge':
+                    order.payment_status = 'challenge'
+                else:
+                    order.payment_status = 'paid'
+            else:
+                order.payment_status = 'paid'
+        elif transaction_status == 'settlement':
+            order.payment_status = 'berhasil'
+        elif transaction_status == 'pending':
+            order.payment_status = 'menunggu'
+        elif transaction_status == 'deny':
+            order.payment_status = 'gagal'
+        elif transaction_status == 'expire':
+            order.payment_status = 'gagal'
+        elif transaction_status == 'cancel':
+            order.payment_status = 'dibatalkan'
+
+        # Jika settlement_time ada, update waktu settlement di database
+        if settlement_time:
+            order.settlement_time = settlement_time
+
+        # Simpan perubahan ke database
+        order.save()
+
+        return jsonify({"message": "Webhook received and processed"}), 200
+    else:
+        return jsonify({"error": "Order ID not found in webhook data"}), 400

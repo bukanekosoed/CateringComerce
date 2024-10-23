@@ -2,11 +2,11 @@ from mongoengine import (connect, Document, StringField,
                          ImageField, IntField, EmbeddedDocumentField,
                          EmbeddedDocument, ReferenceField,
                          CASCADE, ListField, EmailField,
-                         FloatField,  DateTimeField
+                         FloatField, DateTimeField
                         )
 from dotenv import load_dotenv
 import os
-from datetime import datetime
+
 from werkzeug.security import generate_password_hash, check_password_hash
 
 load_dotenv()
@@ -93,8 +93,9 @@ class Orders(Document):
     shipping_cost = IntField()
     vat = IntField()
     delivery_date = StringField()
-    created_at = DateTimeField(default=datetime.utcnow)  # Automatically store the timestamp when the order is created
+    transaction_time = DateTimeField()  # Automatically store the timestamp when the order is created
     payment_status = StringField(default="pending")
+    expiry_time = DateTimeField()
     token = StringField()
 
 
