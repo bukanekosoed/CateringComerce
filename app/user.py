@@ -194,7 +194,7 @@ def update_delivery_option():
                         return response.json()
                     except (requests.exceptions.RequestException, ValueError) as e:
                         print(f"Attempt {attempt + 1} failed: {e}")
-                        time.sleep(2)  # Wait before retrying
+                        
                 return None  # Return None if all attempts fail
 
             data = get_route(osrm_url)
