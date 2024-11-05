@@ -1,6 +1,6 @@
 {% extends 'admin/base.html' %}
 {% block content %}
-<div class="container-xxl flex-grow-1 container-p-y">
+<!-- <div class="container-xxl flex-grow-1 container-p-y">
   <div class="row mb-2">
     <h1>Dashboard</h1>
     <div class="col-md-8">
@@ -10,11 +10,25 @@
             <div class="card-body">
               <div class="card-title d-flex align-items-start justify-content-between">
                 <div class="avatar flex-shrink-0">
-                  <img
-                    src="{{url_for('static',filename='assets/img/icons/unicons/chart-success.png')}}"
-                    alt="chart success"
-                    class="rounded"
-                  />
+                  <i class='bx bx-wallet-alt text-success fs-3'></i>
+                </div>
+
+              </div>
+              <span class="fw-semibold d-block mb-1">Pendapatan</span>
+              <h4 class="card-title mb-2">{{total_revenue | idr}}</h4>
+              <small class="{% if percentage_change >= 0 %}text-success{% else %} text-danger {%endif%} fw-semibold"><i
+                  class="bx {% if percentage_change >= 0 %} bx-up-arrow-alt{% else %}bx-down-arrow-alt{%endif%}"></i>
+                {{percentage_change}} %</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4 col-12  mb-4">
+          <div class="card">
+            <div class="card-body">
+              <div class="card-title d-flex align-items-start justify-content-between">
+                <div class="avatar flex-shrink-0">
+                  <img src="{{url_for('static',filename='assets/img/icons/unicons/chart-success.png')}}"
+                    alt="chart success" class="rounded" />
                 </div>
 
               </div>
@@ -29,30 +43,8 @@
             <div class="card-body">
               <div class="card-title d-flex align-items-start justify-content-between">
                 <div class="avatar flex-shrink-0">
-                  <img
-                    src="{{url_for('static',filename='assets/img/icons/unicons/chart-success.png')}}"
-                    alt="chart success"
-                    class="rounded"
-                  />
-                </div>
-
-              </div>
-              <span class="fw-semibold d-block mb-1">Profit</span>
-              <h3 class="card-title mb-2">$12,628</h3>
-              <small class="text-success fw-semibold"><i class="bx bx-up-arrow-alt"></i> +72.80%</small>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-4 col-12  mb-4">
-          <div class="card">
-            <div class="card-body">
-              <div class="card-title d-flex align-items-start justify-content-between">
-                <div class="avatar flex-shrink-0">
-                  <img
-                    src="{{url_for('static',filename='assets/img/icons/unicons/chart-success.png')}}"
-                    alt="chart success"
-                    class="rounded"
-                  />
+                  <img src="{{url_for('static',filename='assets/img/icons/unicons/chart-success.png')}}"
+                    alt="chart success" class="rounded" />
                 </div>
 
               </div>
@@ -70,14 +62,8 @@
                 <small class="text-muted">42.82k Total Sales</small>
               </div>
               <div class="dropdown">
-                <button
-                  class="btn p-0"
-                  type="button"
-                  id="orederStatistics"
-                  data-bs-toggle="dropdown"
-                  aria-haspopup="true"
-                  aria-expanded="false"
-                >
+                <button class="btn p-0" type="button" id="orederStatistics" data-bs-toggle="dropdown"
+                  aria-haspopup="true" aria-expanded="false">
                   <i class="bx bx-dots-vertical-rounded"></i>
                 </button>
                 <div class="dropdown-menu dropdown-menu-end" aria-labelledby="orederStatistics">
@@ -105,7 +91,7 @@
                   <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
                     <div class="me-2">
                       <h6 class="mb-0">{{ kategori.kategoriNama
-                      }}</h6>
+                        }}</h6>
                     </div>
                     <div class="user-progress">
                       <small class="fw-semibold">82.5k</small>
@@ -124,14 +110,8 @@
         <div class="card-header d-flex align-items-center justify-content-between">
           <h5 class="card-title m-0 me-2">Transactions</h5>
           <div class="dropdown">
-            <button
-              class="btn p-0"
-              type="button"
-              id="transactionID"
-              data-bs-toggle="dropdown"
-              aria-haspopup="true"
-              aria-expanded="false"
-            >
+            <button class="btn p-0" type="button" id="transactionID" data-bs-toggle="dropdown" aria-haspopup="true"
+              aria-expanded="false">
               <i class="bx bx-dots-vertical-rounded"></i>
             </button>
             <div class="dropdown-menu dropdown-menu-end" aria-labelledby="transactionID">
@@ -145,7 +125,8 @@
           <ul class="p-0 m-0">
             <li class="d-flex mb-4 pb-1">
               <div class="avatar flex-shrink-0 me-3">
-                <img src="{{url_for('static', filename='assets/img/icons/unicons/paypal.png')}}" alt="User" class="rounded" />
+                <img src="{{url_for('static', filename='assets/img/icons/unicons/paypal.png')}}" alt="User"
+                  class="rounded" />
               </div>
               <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
                 <div class="me-2">
@@ -238,6 +219,207 @@
       </div>
     </div>
   </div>
+</div> -->
+<div class="container mt-5">
+  <h3>Dashboard</h3>
+  <div class="row">
+    <div class="col-md-4 mb-3">
+      <div class="card">
+        <div class="card-body text-center">
+          <div class="d-flex justify-content-between">
+            <div class="mb-3">
+              <i class='bx bx-shopping-bag bx-lg bg-primary text-white p-3 rounded-3'></i>
+            </div>
+            <div class="d-block text-end">
+              <h4 class="card-title fs-5">Total Orders</h4>
+              <h2 class="card-text fs-5">{{ total_orders }}</h2>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="mt-2" style="font-size: 0.8rem;">
+              <i
+                class='bx {% if orders_change >= 0 %} bxs-up-arrow text-success {% else %} bxs-down-arrow text-danger {% endif %}'></i>
+              {{orders_change}}% Bulan Lalu
+            </div>
+            <a class="btn btn-primary mt-2 text-decoration-none text-white" href="{{url_for('admin.pesanan')}}">View More</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card">
+        <div class="card-body text-center">
+          <div class="d-flex justify-content-between">
+            <div class="mb-3">
+              <i class='bx bx-user bx-lg bg-primary text-white p-3 rounded-3'></i>
+            </div>
+            <div class="d-block text-end">
+              <h4 class="card-title fs-5">Total Users</h4>
+              <h2 class="card-text fs-5">{{ total_users }}</h2>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="mt-2 " style="font-size: 0.8rem;">
+              {% if monthly_increase > 0 %}
+              <i class='bx bxs-up-arrow text-success'></i> {{ monthly_increase }} Pengguna Baru
+              {% else %}
+              0 Pengguna Baru
+              {% endif %}
+            </div>
+            <button class="btn btn-primary mt-2">View More</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card">
+        <div class="card-body text-center">
+          <div class="d-flex justify-content-between">
+            <div class="mb-3">
+              <i class='bx bx-dollar bx-lg bg-primary text-white p-3 rounded-3'></i>
+            </div>
+            <div class="d-block text-end">
+              <h4 class="card-title fs-5">Total Pendapatan</h4>
+              <h2 class="card-text fs-5">{{total_revenue | idr}}</h2>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="mt-2" style="font-size: 0.8rem;">
+              <i
+                class='bx {% if percentage_change >= 0 %} bxs-up-arrow text-success {% else %} bxs-down-arrow text-danger {% endif %}'></i>
+              {{percentage_change}}% Bulan Lalu
+            </div>
+            <button class="btn btn-primary mt-2">View More</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+<div class="container">
+  <div class="card shadow">
+    <div class="row align-items-center p-3">
+      <div class="col-md-6">
+        <div class="card-header">
+          <h5 class="mb-0">Tabel Pendapatan</h5>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <label for="yearSelect" class="form-label">Pilih Tahun:</label>
+        <select id="yearSelect" class="form-select">
+          <!-- Year options will be populated by JavaScript -->
+        </select>
+      </div>
+    </div>
+    
+    
+    <div class="card-body">
+      <div class="row">
+        <canvas id="myChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  const ctx = document.getElementById('myChart');
+  const yearSelect = $('#yearSelect');
+
+  // Get the current year
+  const currentYear = new Date().getFullYear();
+
+  // Populate year options
+  function populateYearOptions() {
+    for (let year = currentYear; year >= 2023; year--) {
+      yearSelect.append(new Option(year, year));
+    }
+    yearSelect.val(currentYear); // Set the default to current year
+  }
+
+  function fetchMonthlyRevenueData(year) {
+    return $.ajax({
+      url: `/dashboard/revenue/${year}`,
+      method: 'GET',
+      dataType: 'json'
+    });
+  }
+
+  function renderChart(year) {
+    fetchMonthlyRevenueData(year).done(function (monthlyRevenueData) {
+      if (monthlyRevenueData && monthlyRevenueData.length) {
+        const labels = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+        // Clear previous chart instance if it exists
+        if (ctx.chart) {
+          ctx.chart.destroy();
+        }
+
+        // Create new chart
+        const chart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Pendapatan',
+              data: monthlyRevenueData,
+              borderColor: 'rgba(105, 108, 255, 1)',
+              backgroundColor: 'rgba(105, 108, 255, 1)',
+              borderWidth: 2,
+              borderRadius: 5,
+              borderSkipped: false,
+            }]
+          },
+          options: {
+            animation: {
+              duration: 1000,
+              easing: 'easeOutBounce'
+            },
+            plugins: {
+              title: {
+                display: true,
+                text: `Pendapatan Tahun ${year}`,
+                font: {
+                  size: 20
+                }
+              },
+              tooltip: {
+                enabled: true,
+                mode: 'index',
+                intersect: false
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
+
+        // Store the chart instance for future reference
+        ctx.chart = chart;
+      } else {
+        console.error(`No data available for year: ${year}`);
+      }
+    }).fail(function (jqXHR, textStatus, errorThrown) {
+      console.error('Error fetching revenue data:', textStatus, errorThrown);
+    });
+  }
+
+  // Initialize the page
+  $(document).ready(function () {
+    populateYearOptions();
+    renderChart(currentYear); // Render chart with current year data
+
+    // Handle year selection change
+    yearSelect.change(function () {
+      const selectedYear = $(this).val();
+      renderChart(selectedYear); // Update the chart when the year changes
+    });
+  });
+</script>
+
+
 <!-- / Content -->
 {% endblock %}

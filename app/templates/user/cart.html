@@ -254,7 +254,7 @@ Keranjang
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
         <script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js"
-            data-client-key="SB-Mid-client-zBQ72lysmm_7ppu_"></script>
+            data-client-key="SB-Mid-client-ZeSro0aAvX_ctrEe"></script>
         <script type="text/javascript">
             $(document).ready(function () {
                 $('#checkoutButton').on('click', function (event) {
@@ -270,23 +270,14 @@ Keranjang
                             if (response.snap_token) {
                                 snap.pay(response.snap_token, {
                                     onSuccess: function (result) {
-                                        console.log('Payment success:', result);
-                                        alert('Payment successful!');
                                         window.location.href = "{{ url_for('main.order') }}";
                                     },
                                     onPending: function (result) {
-                                        console.log('Payment pending:', result);
-                                        alert('Payment pending!');
                                         window.location.href = "{{ url_for('main.order') }}";
                                     },
                                     onError: function (result) {
-                                        console.log('Payment error:', result);
-                                        alert('Payment failed!');
                                     },
                                     onClose: function () {
-                                        console.log('Payment popup closed.');
-                                        alert('Payment was not completed.');
-                                        // Redirect to order page when popup is closed
                                         window.location.href = "{{ url_for('main.order') }}";
                                     }
                                 });

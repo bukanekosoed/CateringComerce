@@ -1,0 +1,89 @@
+{% extends 'admin/base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Daftar Order</h2>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table  table-striped table-hover">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>ID Transaksi</th>
+                            <th>Jumlah Item</th>
+                            <th>Total Harga</th>
+                            <th>Status Pembayaran</th>
+                            <th>Pengiriman</th>
+                            <th>Tanggal Pengiriman</th>
+                            <th>Status Pesanan</th> <!-- Kolom baru untuk status -->
+                            
+                        </tr>
+                    </thead>
+                    <tbody>
+                       
+                        {% for order in orders %}
+                        
+                        <tr>
+                            <td><small>{{ order.order_id }}</small></td>
+                            <td>
+                                <div class="d-block">
+                                    {% for item in order.items %}
+                                    <div class="d-flex mb-2">
+                                        <img src="{{ url_for('image.image', image_id=item.product.id) }}"
+                                            alt="{{ item.product.produkNama }}" class="img-fluid rounded me-2"
+                                            style="width: 40px; height: 40px;">
+                                        <div>
+                                            <strong>{{ item.product.produkNama }}</strong><br>
+                                            <small class="text-muted">Jumlah: {{ item.quantity }}</small>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td><small>{{ order.grand_total | idr }}</small></td>
+                            <td>
+                                <small class="badge 
+                                    {% if order.payment_status == 'berhasil' %} bg-success 
+                                    {% elif order.payment_status == 'menunggu' %} bg-warning 
+                                    {% elif order.payment_status == 'gagal' %} bg-danger 
+                                    {% else %} bg-secondary 
+                                    {% endif %}">
+                                    {{ order.payment_status }}
+                                </small>
+                            </td>
+                            <td><small>
+                                    {% if order.delivery_option == 'pickup' %}
+                                    Diambil di Toko
+                                    {% elif order.delivery_option == 'delivery' %}
+                                    Diantar ke {{order.user.addresses[order.address_index].full_address}} <br>
+                                    <a href="https://plus.codes/{{order.user.addresses[order.address_index].plus_code}}" target="_blank" rel="noopener noreferrer">Maps</a>
+                                    {% else %}
+                                    Pilihan Pengiriman Tidak Diketahui
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td><small>{{ order.delivery_date }} WIB</small></td>
+                            <td>
+                                <small class="badge 
+                                    {% if order.status == 'sedang_diproses' %} bg-info 
+                                    {% elif order.status == 'dikirim' %} bg-primary 
+                                    {% elif order.status == 'selesai' %} bg-success 
+                                    {% elif order.status == 'gagal' %} bg-danger 
+                                    {% else %} bg-secondary 
+                                    {% endif %}">
+                                    {{ order.status }}
+                                </small>
+                            </td> <!-- Kolom status -->
+                            
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+{% endblock %}

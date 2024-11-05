@@ -3,6 +3,7 @@ from config import Config
 from flask_login import LoginManager
 from flask_session import Session
 from flask_pymongo import PyMongo
+from .models import  Users, Admin
 
 def create_app():
     app = Flask(__name__)

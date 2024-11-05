@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template,request,redirect,flash,url_for,session,jsonify
+from flask import Blueprint, render_template,request,redirect,flash,url_for,session,jsonify,make_response
 import requests
 from .models import (Kategori,Produk, get_products_by_category, 
                      get_all_categories, get_product_count_by_category, 
@@ -14,14 +14,17 @@ from dotenv import load_dotenv
 import os
 from datetime import datetime, timedelta
 import pytz
+from babel.dates import format_datetime
 from midtransclient import Snap
 from openlocationcode import openlocationcode as olc
+import pdfkit
+from pdfkit.configuration import Configuration
 
 load_dotenv()
 STORE_LATITUDE = os.getenv('STORE_LATITUDE')
 STORE_LONGITUDE = os.getenv('STORE_LONGITUDE')
 
-gmt_plus_7 = pytz.timezone('Asia/Jakarta')
+
 # Midtrans Client Initialization
 midtrans_client = Snap(
     is_production=False,
@@ -396,8 +399,8 @@ def create_transaction():
     user_id = session.get('user_id')
     delivery_option = request.form.get('delivery_option')
     address_index_str = request.form.get('address_index')
-    delivery_date = request.form.get('delivery_date')  # Ambil tanggal pengiriman dari form
-    delivery_time = request.form.get('delivery_time')  # Ambil waktu pengiriman dari form
+    delivery_date = request.form.get('delivery_date')  
+    delivery_time = request.form.get('delivery_time')  
 
     
     if not user_id:
@@ -427,9 +430,8 @@ def create_transaction():
     if delivery_option == 'delivery':
         if address_index is not None:
             addresses = user.addresses
-            if address_index < 0 or address_index >= len(addresses):
-                flash('Invalid address index.', 'danger')
-                return redirect(url_for('main.cart'))
+            if 0 <= address_index < len(addresses):
+                address = addresses[address_index]  # Ambil alamat berdasarkan indek
 
             address = addresses[address_index]
 
@@ -474,7 +476,7 @@ def create_transaction():
 
     while True:
         # Menghasilkan order ID dengan counter bulanan
-        order_id = f'LanggengCatering/{today.strftime("%Y%m%d")}/{roman_year}/{roman_month}/{order_count_for_month}'
+        order_id = f'LC/{today.strftime("%Y%m%d")}/{roman_year}/{roman_month}/{order_count_for_month}'
 
         # Cek apakah order ID sudah ada
         if not Orders.objects(order_id=order_id):
@@ -545,6 +547,7 @@ def create_transaction():
 
         full_delivery_datetime = f"{delivery_date} {delivery_time}"
         # Replace this with your time zone handling if needed
+        gmt_plus_7 = pytz.timezone('Asia/Jakarta')
         transaction_time = datetime.now(gmt_plus_7)
 
         # Set expiry time (for example, 1 hour after transaction time)
@@ -562,7 +565,8 @@ def create_transaction():
             delivery_date=full_delivery_datetime,  # Simpan tanggal pengiriman
             token = snap_response['token'],
             transaction_time = transaction_time,
-            expiry_time=expiry_time 
+            expiry_time=expiry_time,
+            address_index=address_index
         )
          # Simpan daftar order items
         new_order.save()  # Simpan order ke database
@@ -585,10 +589,37 @@ def order():
         flash('User not logged in.', 'warning')
         return redirect(url_for('auth.login'))  # Redirect to login if user is not logged in
 
-    # Fetch the user's cart
+    # Fetch the user's orders
     user = Users.objects(id=user_id).first()
-    orders = Orders.objects(user=user).order_by('-created_at')
-    return render_template('user/order.html',orders=orders)
+    orders = Orders.objects(user=user).order_by('-transaction_time')
+
+    for order in orders:
+        # Mengonversi dan memformat delivery_date
+        delivery_date = order['delivery_date']
+        if isinstance(delivery_date, str):
+            delivery_date = datetime.strptime(delivery_date, '%Y-%m-%d %H:%M')  # Format yang benar
+
+        # Memformat delivery_date
+        formatted_date = format_datetime(delivery_date, format='EEEE, dd MMMM yyyy HH:mm', locale='id_ID')
+        order['delivery_date'] = formatted_date
+
+        # Memformat transaction_time
+        transaction_time = order['transaction_time']
+        if isinstance(transaction_time, str):
+            transaction_time = datetime.fromisoformat(transaction_time)  # Mengonversi string ISO ke datetime
+
+        # Mengubah timezone dari UTC ke GMT+7
+        utc_zone = pytz.utc
+        gmt_plus_7 = pytz.timezone('Asia/Jakarta')  # Ganti dengan zona waktu yang sesuai
+        transaction_time = transaction_time.replace(tzinfo=utc_zone)  # Mengatur timezone UTC
+        transaction_time = transaction_time.astimezone(gmt_plus_7)  # Mengubah ke GMT+7
+
+        formatted_transaction_time = format_datetime(transaction_time, format='EEEE, dd MMMM yyyy HH:mm', locale='id_ID')
+        order['transaction_time'] = formatted_transaction_time
+
+
+    return render_template('user/order.html', orders=orders)
+
 
 @user_bp.route('/payment/get_snap_token/<int:order_id>', methods=['GET'])
 def get_snap_token(order_id):
@@ -612,9 +643,11 @@ def midtrans_webhook():
     order_id = webhook_data.get('order_id')
     transaction_status = webhook_data.get('transaction_status')
     payment_type = webhook_data.get('payment_type')
+    transaction_id = webhook_data.get('transaction_id')  # Ambil transaction_id
     fraud_status = webhook_data.get('fraud_status')
     settlement_time = webhook_data.get('settlement_time')
-
+    
+    
     # Logika untuk memproses data webhook
     if order_id:
         # Cari pesanan berdasarkan order_id
@@ -646,6 +679,18 @@ def midtrans_webhook():
         # Jika settlement_time ada, update waktu settlement di database
         if settlement_time:
             order.settlement_time = settlement_time
+        
+       
+        
+        # Simpan transaction_id dan payment_type
+        if transaction_id:
+            order.transaction_id = transaction_id
+        if payment_type:
+            order.payment_type = payment_type
+
+        # Menghapus token jika payment_status bukan pending/menunggu
+        if order.payment_status not in ['pending', 'menunggu']:
+            order.token = None  # Atau gunakan mekanisme lain untuk menghapus token
 
         # Simpan perubahan ke database
         order.save()
@@ -653,3 +698,63 @@ def midtrans_webhook():
         return jsonify({"message": "Webhook received and processed"}), 200
     else:
         return jsonify({"error": "Order ID not found in webhook data"}), 400
+
+
+@user_bp.route('/print-pdf/<transaction_id>')
+def print_pdf(transaction_id):
+    # Replace this with your own database query
+    order = Orders.objects(transaction_id=transaction_id).first()  # Fetch single order
+
+    if not order:
+        return "Order not found", 404
+
+    # Process and format delivery_date and transaction_time
+    if isinstance(order.delivery_date, str):
+        delivery_date = datetime.strptime(order.delivery_date, '%Y-%m-%d %H:%M')
+    else:
+        delivery_date = order.delivery_date  # Assume it's already a datetime object
+
+    # Format delivery_date
+    formatted_date = format_datetime(delivery_date, format='EEEE, dd MMMM yyyy HH:mm', locale='id_ID')
+    order.delivery_date = formatted_date
+
+    # Format transaction_time
+    transaction_time = order.transaction_time
+    if isinstance(transaction_time, str):
+        transaction_time = datetime.fromisoformat(transaction_time)  # Convert ISO string to datetime
+
+    # Change timezone from UTC to GMT+7
+    utc_zone = pytz.utc
+    gmt_plus_7 = pytz.timezone('Asia/Jakarta')  # Adjust time zone as needed
+    transaction_time = transaction_time.replace(tzinfo=utc_zone)  # Set timezone UTC
+    transaction_time = transaction_time.astimezone(gmt_plus_7)  # Change to GMT+7
+
+    formatted_transaction_time = format_datetime(transaction_time, format='EEEE, dd MMMM yyyy HH:mm', locale='id_ID')
+    order.transaction_time = formatted_transaction_time
+
+    # Render the HTML template with order data
+    html = render_template('user/invoice.html', order=order)
+
+    # Path to wkhtmltopdf executable
+    wkhtmltopdf_path = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'
+
+    # Configuring pdfkit
+    config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+    options = {
+        'enable-local-file-access': None,
+        'no-stop-slow-scripts': None,
+        'debug-javascript': None,
+    }
+
+    try:
+        # Generating PDF
+        pdf = pdfkit.from_string(html, False, configuration=config, options=options)
+        response = make_response(pdf)
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename=receipt_{transaction_id}.pdf'
+        return response
+    
+    except IOError as e:
+        return f"IOError: {str(e)}", 500
+    except Exception as e:
+        return f"An error occurred: {str(e)}", 500

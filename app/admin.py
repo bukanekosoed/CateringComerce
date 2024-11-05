@@ -1,10 +1,13 @@
-from flask import Blueprint, render_template,request, redirect,send_file,flash,url_for,abort
-from .models import Kategori,Produk
+from flask import Blueprint, render_template,request, redirect,jsonify,flash,url_for,abort
+from .models import Kategori,Produk,Orders,Users
 from mongoengine.errors import NotUniqueError,ValidationError
 from werkzeug.utils import secure_filename
 from gridfs.errors import NoFile
 import io
 from .decorators import login_required, admin_required
+from datetime import datetime
+from babel.dates import format_datetime
+
 
 
 admin_bp = Blueprint('admin', __name__)
@@ -17,7 +20,25 @@ def before_request():
 
 @admin_bp.route('/')
 def index():
-    return render_template('admin/index.html',kategoris = Kategori.objects.all())
+    now = datetime.now()
+    month = request.args.get('month', now.month, type=int)
+    year = request.args.get('year', now.year, type=int)
+
+    total_revenue, percentage_change = Orders.get_monthly_revenue_and_change(month=month, year=year)
+    total_orders, orders_change = Orders.get_monthly_orders_and_change(month=month, year=year)
+    # Fetch total users
+    total_users = Users.get_total_users()
+    # Fetch monthly user increase
+    monthly_increase = Users.get_monthly_user_increase(month=month, year=year)
+    return render_template('admin/index.html',kategoris = Kategori.objects.all(),
+                           total_revenue=total_revenue, 
+                           percentage_change=percentage_change, 
+                           total_users=total_users,
+                           monthly_increase=monthly_increase,
+                           total_orders=total_orders,
+                           orders_change=orders_change,
+                           month=month, 
+                           year=year)
 
 ################################## Produk ###############################
 @admin_bp.route('/produk')
@@ -215,3 +236,28 @@ def delete_kategori(kategori_id):
         flash('Kategori dan gambar berhasil dihapus!', 'success')
     return redirect(url_for('admin.kategori'))
 
+@admin_bp.route('/pesanan',methods=['GET','POST'])
+def pesanan():
+    orders = Orders.objects.all().order_by('-transaction_time')
+    for order in orders:
+        delivery_date = order['delivery_date']
+
+        # Pastikan delivery_date adalah objek datetime
+        if isinstance(delivery_date, str):
+            # Mengonversi string ke objek datetime
+            delivery_date = datetime.strptime(delivery_date, '%Y-%m-%d %H:%M')
+
+        # Memformat tanggal dengan lokal Indonesia
+        formatted_date = format_datetime(delivery_date, format='EEEE, dd MMMM yyyy HH:mm ', locale='id_ID')
+        order['delivery_date'] = formatted_date
+
+    return render_template('admin/pesanan.html',orders=orders)
+
+@admin_bp.route('/revenue/<int:year>')
+def revenue(year):
+    monthly_revenue = []
+    for month in range(1, 13):  # Loop through all months
+        total_revenue, _ = Orders.get_monthly_revenue_and_change(month, year)
+        monthly_revenue.append(total_revenue)
+
+    return jsonify(monthly_revenue)

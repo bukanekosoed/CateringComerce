@@ -25,13 +25,20 @@ Riwayat Pemesanan
                         </p>
                     </div>
                     <!-- Payment Status -->
-                    {% if order.payment_status == 'pending' %}
-                    <span class="badge bg-danger text-white">Pending</span>
-                    {% elif order.payment_status == 'error' %}
-                    <span class="badge bg-danger text-white">Error</span>
-                    {% else %}
-                    <span class="badge bg-success text-white">{{ order.payment_status | title }}</span>
-                    {% endif %}
+                    <div class="d-flex align-items-center">
+                        {% if order.payment_status == 'menunggu' %}
+                        <span class="badge bg-secondary text-white">Pending</span>
+                        {% elif order.payment_status == 'gagal' %}
+                        <span class="badge bg-danger text-white">Gagal</span>
+                        {% else %}
+                        {% if order.transaction_time %}
+                        <span class="me-2">{{ order.transaction_time }}</span>
+                        {% endif %}
+                        <span class="badge bg-primary text-white">{{ order.payment_status | title }}</span>
+                        {% endif %}
+                    </div>
+
+
                 </div>
 
                 <!-- Product List -->
@@ -61,90 +68,175 @@ Riwayat Pemesanan
                     <p class="mb-0">Total Harga: <strong>{{ order.grand_total | idr }}</strong></p>
 
                     <!-- Payment Button or Receipt Modal Trigger -->
-                    {% if order.payment_status == 'pending' %}
+                    {% if order.payment_status == 'menunggu' %}
                     <button class="btn btn-primary btn-pay-now ms-5 rounded-5 px-4" data-snap-token="{{ order.token }}"
                         data-order-id="{{ order.order_id }}">
                         Bayar Sekarang
                     </button>
+                    {% elif order.payment_status == 'gagal' %}
+
                     {% else %}
-                    <!-- Modal Trigger Button -->
+                    <!-- Button to trigger modal -->
                     <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                        data-bs-target="#orderReceiptModal{{ order.grand_total }}">
+                        data-bs-target="#orderReceiptModal{{ order.transaction_id }}">
                         Lihat Struk
                     </button>
 
-                    <!-- Modal Structure -->
-                    <div class="modal fade" id="orderReceiptModal{{ order.grand_total }}" tabindex="-1"
-                        aria-labelledby="orderReceiptModalLabel{{ order.order_id }}" aria-hidden="true">
+                    <!-- Modal -->
+                    <div class="modal fade" id="orderReceiptModal{{ order.transaction_id }}" tabindex="-1"
+                        aria-labelledby="orderReceiptModalLabel" aria-hidden="true">
                         <div class="modal-dialog modal-lg">
                             <div class="modal-content">
                                 <div class="modal-header">
-                                    <h5 class="modal-title" id="orderReceiptModalLabel{{ order.order_id }}">Struk
-                                        Pembayaran</h5>
+                                    <h5 class="modal-title" id="orderReceiptModalLabel">Struk Pesanan</h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"
                                         aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
-                                    <p>Hi {{ order.user.name }},</p>
-                                    <p>Ini adalah struk pembayaran sebesar <strong>{{ order.grand_total | idr
-                                            }}</strong> untuk pesanan Anda.</p>
-                                    <div class="d-flex justify-content-between">
-                                        <div>
-                                            <p><strong>Nomor Pembayaran:</strong> {{ order.order_id }}</p>
-                                        </div>
-                                        <div>
-                                            <p><strong>Tanggal Pembayaran:</strong> {{ order.transaction_time }}</p>
-                                        </div>
-                                    </div>
+                                    <div class="container my-4">
+                                        <div class="container my-4">
+                                            <!-- Header -->
+                                            <div class="card mb-4">
+                                                <div class="card-body">
+                                                    <h5 class="card-title">Nota Pesanan</h5>
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <p class="mb-1"><strong>Nama Penjual:</strong> Langgeng
+                                                                Catering</p>
+                                                            <p class="mb-1"><strong>No. Pesanan:</strong>
+                                                                {{order.order_id}}
+                                                            </p>
+                                                            <p class="mb-1"><strong>Waktu Pembayaran:</strong> {{
+                                                                order.transaction_time }}
+                                                            </p>
+                                                            <p class="mb-1"><strong>Metode Pembayaran:</strong> {{
+                                                                order.payment_type }}</p>
+                                                            <p class="mb-1"><strong>Jasa Kirim:</strong> {% if
+                                                                order.delivery_option == 'pickup' %}
+                                                                Diambil di Toko
+                                                                {% elif order.delivery_option == 'delivery' %}
+                                                                Diantar Ke
+                                                                {{order.user.addresses[order.address_index].address_type}}
+                                                                {% else %}
+                                                                Pilihan Pengiriman Tidak Diketahui
+                                                                {% endif %}</p>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <p class="mb-1"><strong>Nama Pembeli:</strong>
+                                                                {{order.user.name}}</p>
+                                                            <p class="mb-1"><strong>No. Handphone:</strong>
+                                                                {{order.user.phone}}</p>
+                                                            <p class="mb-1"><strong>Alamat Pembeli:</strong></p>
+                                                            <p class="small">
+                                                                {{order.user.addresses[order.address_index].full_address}}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                                    <hr>
+                                            <!-- Rincian Pesanan -->
+                                            <div class="card mb-4">
+                                                <div class="card-body">
+                                                    <h5 class="card-title">Rincian Pesanan</h5>
+                                                    <div class="table-responsive">
+                                                        <table class="table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>No.</th>
+                                                                    <th>Produk</th>
+                                                                    <th>Variasi</th>
+                                                                    <th>Harga Produk</th>
+                                                                    <th>Kuantitas</th>
+                                                                    <th>Subtotal</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
 
-                                    <div class="d-flex justify-content-between">
-                                        <div><strong>Client</strong><br>{{ order.user.name }}<br>{{ order.user.address
-                                            }}<br>{{ order.user.phone }}<br>{{ order.user.email }}</div>
-                                        <div><strong>Payment To</strong><br>Nama Penerima<br>Alamat Penerima<br>Kota
-                                            Penerima<br>Kode Pos<br>Email Penerima</div>
-                                    </div>
 
-                                    <hr>
+                                                                {% for item in order.items %}
+                                                                <tr>
+                                                                    <td>{{loop.index}}</td>
+                                                                    <td>{{ item.product.produkNama }}</td>
+                                                                    <td>{{ item.variant }}</td>
+                                                                    <td>{{ item.product.produkHarga | idr }}</td>
+                                                                    <td>{{ item.quantity }}</td>
+                                                                    <td>{{ (item.product.produkHarga * item.quantity) |
+                                                                        idr }}</td>
+                                                                </tr>
 
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Description</th>
-                                                <th>Quantity</th>
-                                                <th>Amount</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for item in order.items %}
-                                            <tr>
-                                                <td>{{ item.product.produkNama }}</td>
-                                                <td>{{ item.quantity }}</td>
-                                                <td>{{ (item.product.produkHarga * item.quantity) | idr }}</td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
+                                                                {% endfor %}
 
-                                    <hr>
+                                                                <tr>
+                                                                    <td colspan="5" class="text-end">
+                                                                        <strong>Total</strong>
+                                                                    </td>
+                                                                    <td><strong>
+                                                                            {{(order.grand_total - order.shipping_cost -
+                                                                            order.vat )| idr}}
+                                                                        </strong>
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                                    <div class="d-flex justify-content-between">
-                                        <div><strong>Extra Notes</strong><br></div>
-                                        <div>
-                                            <p><strong>Shipping:</strong> {{ order.shipping_cost | idr }}</p>
-                                            <p><strong>Total:</strong> {{ order.grand_total | idr }}</p>
+                                            <!-- Rincian Pembayaran -->
+                                            <div class="card">
+                                                <div class="card-body">
+                                                    <h5 class="card-title">Rincian Pembayaran</h5>
+                                                    <div class="row">
+                                                        <div class="col-md-6 offset-md-6">
+                                                            <div class="d-flex justify-content-between mb-2">
+                                                                <span>Subtotal Pesanan</span>
+                                                                <span>{{(order.grand_total - order.shipping_cost -
+                                                                    order.vat )| idr}}</span>
+                                                            </div>
+                                                            <div class="d-flex justify-content-between mb-2">
+                                                                <span>Subtotal Pengiriman</span>
+                                                                <span>{{order.shipping_cost | idr}}</span>
+                                                            </div>
+                                                            <div class="d-flex justify-content-between mb-2">
+                                                                <span>PPN (11%) </span>
+                                                                <span>{{order.vat | idr}}</span>
+                                                            </div>
+                                                            <hr>
+                                                            <div class="d-flex justify-content-between fw-bold">
+                                                                <span>Total Pembayaran</span>
+                                                                <span>{{order.grand_total | idr}}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Footer -->
+                                            <div class="mt-4 text-center small">
+                                                <p>Langgeng Catering</p>
+                                                <p>Jl.DR . Setia Budi No 38 Kembang Baru RT 002/RW001<br> Kec. Brebes,
+                                                    Kabupaten Brebes,
+                                                    Jawa Tengah 52212
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary"
                                         data-bs-dismiss="modal">Tutup</button>
-                                    <button type="button" class="btn btn-primary">Cetak Struk</button>
+                                    <a href="{{ url_for('main.print_pdf', transaction_id=order.transaction_id) }}"
+                                        class="btn btn-primary" target="_blank">Print PDF</a>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+
+                    <!-- Modal Structure -->
+
                     {% endif %}
                 </div>
             </div>
@@ -173,12 +265,12 @@ Riwayat Pemesanan
                 // Tampilkan Snap popup menggunakan token yang diambil
                 snap.pay(snapToken, {
                     onSuccess: function (result) {
-                        alert('Pembayaran berhasil!');
-                        window.location.href = "/order/history?status=success"; // Redirect ke riwayat pesanan
+
+                        window.location.href = "/order"; // Redirect ke riwayat pesanan
                     },
                     onPending: function (result) {
-                        alert('Pembayaran pending!');
-                        window.location.href = "/order/history?status=pending"; // Redirect ke riwayat pesanan
+
+                        window.location.href = "/order"; // Redirect ke riwayat pesanan
                     },
                     onError: function (result) {
                         alert('Pembayaran gagal!');
