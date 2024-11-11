@@ -4,6 +4,11 @@ from flask_login import LoginManager
 from flask_session import Session
 from flask_pymongo import PyMongo
 from .models import  Users, Admin
+# Import and register blueprints
+from .auth import auth_bp,oauth
+from .user import user_bp
+from .admin import admin_bp
+from .image import image_bp
 
 def create_app():
     app = Flask(__name__)
@@ -20,7 +25,7 @@ def create_app():
 
     # Inisialisasi Flask-Session
     Session(app)
-
+    oauth.init_app(app)
     # Inisialisasi Flask-Login
     login_manager = LoginManager()
     login_manager.init_app(app)
@@ -53,11 +58,7 @@ def create_app():
     def page_not_found(e):
         return render_template('404.html'), 404
 
-    # Import and register blueprints
-    from .auth import auth_bp
-    from .user import user_bp
-    from .admin import admin_bp
-    from .image import image_bp
+   
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(admin_bp, url_prefix='/dashboard')

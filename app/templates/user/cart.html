@@ -8,88 +8,108 @@ Keranjang
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
 {% block content %}
-<div class="container py-5">
-    {% if cart_items %}
+<!-- cart + summary -->
+<section class=" my-5">
 
-    <div class="container mb-1">
+    <div class="container">
         <div class="row">
+            {% if cart_items %}
+            <!-- cart -->
             <div class="col-lg-8">
-                <!-- Cart Items Section -->
-                <div class="row">
-                    {% for items in cart_items %}
-                    <div class="col-md-12 mb-3">
-                        <div class="card shadow overflow-hidden position-relative">
-                            <form action="{{ url_for('main.cart_delete', product_id=items.product.id) }}" method="post">
-                                <button class="btn btn-danger rounded-circle position-absolute top-0 end-0 m-2"
-                                    type="submit">
-                                    <i class='bx bx-trash fs-6'></i>
-                                </button>
-                            </form>
+                <div class="card shadow p-4 rounded-4 mb-5">
+                    <div class="m-4">
+                        <h4 class="card-title mb-4">Keranjang Saya</h4>
+                        {% for items in cart_items %}
+                        <div class="row gy-3 mb-4 ">
+                            <div class="col-lg-8">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <img src="{{ url_for('image.image', image_id=items.product.id) }}"
+                                        alt="{{ items.product.produkNama }}" class="border rounded me-3"
+                                        style="width: 96px; height: 96px;" />
 
-                            <div class="p-3 d-flex">
-                                <div class="flex-shrink-0">
-                                    <img class="rounded object-fit-cover h-100"
-                                        src="{{ url_for('image.image', image_id=items.product.id) }}"
-                                        alt="{{ items.product.produkNama }}" style="width: 100px; height: 100px;">
-                                </div>
-                                <div class="d-md-flex d-block flex-grow-1 justify-content-between ms-3 align-items-end">
-                                    <div class="d-block">
-                                        <h5 class="mb-1">{{ items.product.produkNama }}</h5>
-                                        <span class="fs-6">( {{ items.product.kategori.kategoriNama }}
-                                            {% if items.variant %}
-                                            - {{ items.variant }}
-                                            {% endif %}
-                                            )</span>
-                                        <p class="mb-1 ">{{ items.product.produkHarga | idr }}</p>
-                                        <p id="total_{{ items.product.id }}" class="mb-0 fw-bold">Total: {{
-                                            (items.quantity *
-                                            items.product.produkHarga) |
-                                            idr }}</p>
+                                    <div class="d-block d-md-flex justify-content-between w-100">
+                                        <div>
+                                            <p class="fw-bold mb-0">{{ items.product.produkNama }}</p>
+                                            <p class="text-muted mb-0">
+                                                ( {{ items.product.kategori.kategoriNama }}
+                                                {% if items.variant %}
+                                                - {{ items.variant }}
+                                                {% endif %}
+                                                )
+                                            </p>
+                                        </div>
+                                        <div class="">
+                                            <text class="h6">
+                                                {{ (items.quantity * items.product.produkHarga) | idr }}
+                                            </text>
+                                            <br />
+                                            <small class="text-muted text-nowrap">
+                                                {{ items.product.produkHarga | idr }} / pcs
+                                            </small>
+                                        </div>
                                     </div>
-                                    <!-- Quantity Input Section -->
-                                    <div class="d-block">
-                                        <!-- Decrement form -->
-                                        <form id="form_decrement_{{ items.product.id }}"
-                                            action="{{ url_for('main.update_quantity', product_id=items.product.id) }}"
-                                            method="POST" class="d-inline">
-                                            <input type="hidden" name="action" value="decrement">
-                                            <button type="submit" id="btndecrement"
-                                                class="btn btn-sm rounded-pill btn-danger text-white border" {% if
-                                                items.quantity <=items.product.minPembelian %}disabled{% endif %}>
-                                                <i class='bx bx-minus'></i>
+                                </div>
+
+
+                            </div>
+
+
+                            <div class="col-lg-2 col-sm-6 col-6 d-flex flex-row flex-lg-column flex-xl-row text-nowrap">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <!-- Decrement form -->
+                                    <form id="form_decrement_{{ items.product.id }}"
+                                        action="{{ url_for('main.update_quantity', product_id=items.product.id) }}"
+                                        method="POST" class="d-inline">
+                                        <input type="hidden" name="action" value="decrement">
+                                        <button type="submit" id="btndecrement"
+                                            class="btn btn-sm rounded-pill btn-danger text-white border" {% if
+                                            items.quantity <=items.product.minPembelian %}disabled{% endif %}>
+                                            <i class='bx bx-minus'></i>
+                                        </button>
+                                    </form>
+
+                                    <!-- Quantity display/input -->
+                                    <form id="form_update_{{ items.product.id }}"
+                                        action="{{ url_for('main.update_quantity', product_id=items.product.id) }}"
+                                        method="POST" class="d-inline mx-2">
+                                        <input type="hidden" name="action" value="update">
+                                        <input id="quantity_{{ items.product.id }}" type="number" name="quantity"
+                                            value="{{ items.quantity }}" min="{{ items.product.minPembelian }}"
+                                            class="form-control text-center qty border-0 d-inline" style="width: 80px;">
+                                    </form>
+
+                                    <!-- Increment form -->
+                                    <form id="form_increment_{{ items.product.id }}"
+                                        action="{{ url_for('main.update_quantity', product_id=items.product.id) }}"
+                                        method="POST" class="d-inline">
+                                        <input type="hidden" name="action" value="increment">
+                                        <button type="submit"
+                                            class="btn btn-primary btn-sm rounded-pill text-white border">
+                                            <i class='bx bx-plus'></i>
+                                        </button>
+                                    </form>
+
+                                    <!-- Spacer to push delete button to the right -->
+                                    <div class="mx-2">
+                                        <!-- Delete form (placed at the right) -->
+                                        <form action="{{ url_for('main.cart_delete', product_id=items.product.id) }}"
+                                            method="post">
+                                            <button class="btn btn-danger btn-sm rounded-pill" type="submit">
+                                                <i class='bx bx-trash'></i>
                                             </button>
                                         </form>
-
-                                        <!-- Quantity display/input -->
-                                        <form id="form_update_{{ items.product.id }}"
-                                            action="{{ url_for('main.update_quantity', product_id=items.product.id) }}"
-                                            method="POST" class="d-inline">
-                                            <input type="hidden" name="action" value="update">
-                                            <input id="quantity_{{ items.product.id }}" type="number" name="quantity"
-                                                value="{{ items.quantity }}" min="{{ items.product.minPembelian }}"
-                                                class="form-control text-center qty border-0 d-inline"
-                                                style="width: 100px;">
-                                        </form>
-
-                                        <!-- Increment form -->
-                                        <form id="form_increment_{{ items.product.id }}"
-                                            action="{{ url_for('main.update_quantity', product_id=items.product.id) }}"
-                                            method="POST" class="d-inline">
-                                            <input type="hidden" name="action" value="increment">
-                                            <button type="submit"
-                                                class="btn btn-primary btn-sm rounded-pill text-white border">
-                                                <i class='bx bx-plus'></i>
-                                            </button>
-                                        </form>
                                     </div>
-
                                 </div>
+
                             </div>
                         </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
                 </div>
             </div>
+            <!-- cart -->
+
+            <!-- summary -->
             <div class="col-lg-4 col-12 mb-5">
                 <div class="card shadow p-4 rounded-4 mb-5">
                     <div class="mb-4">
@@ -104,7 +124,7 @@ Keranjang
                                     <h5>Pilih Tanggal Pengiriman</h5>
                                     <div class="input-group">
                                         <input type="date" class="form-control" name="delivery_date" id="delivery-date"
-                                            required>
+                                            required placeholder="Pilih Tangal Pengiriman">
                                         <input type="time" class="form-control" id="delivery-time" name="delivery_time"
                                             placeholder="Pilih Jam Pengiriman" required>
                                     </div>
@@ -176,6 +196,7 @@ Keranjang
                     </div>
                 </div>
             </div>
+            <!-- summary -->
             {% else %}
             <div class="text-center py-5">
                 <img src="{{ url_for('static', filename='img/empty-cart.png') }}" class="mb-4">
@@ -184,314 +205,319 @@ Keranjang
             </div>
             {% endif %}
         </div>
+    </div>
 
-        <!-- Add Address Modal -->
-        <div class="modal fade" id="addAddressModal" tabindex="-1" aria-labelledby="addAddressModalLabel"
-            aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="addAddressModalLabel">Tambah Alamat</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <form action="{{ url_for('main.save_address') }}" method="post">
-                        <div class="modal-body d-flex">
-                            <!-- Form Section -->
-                            <div class="me-3" style="flex: 1;">
-                                <div class="mb-3">
-                                    <label for="address_type" class="form-label">Jenis Alamat</label>
-                                    <input type="text" class="form-control" id="address_type" name="address_type"
-                                        placeholder="Rumah, Kantor, dll" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="street_name" class="form-label">Nama Jalan</label>
-                                    <input type="text" class="form-control" id="street_name" name="street_name"
-                                        placeholder="Nama Jalan" required>
-                                </div>
-                                <div class="row g-3">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="rt_rw" class="form-label">RT/RW</label>
-                                        <input type="text" class="form-control" id="rt_rw" name="rt_rw"
-                                            placeholder="RT/RW" required>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="village" class="form-label">Desa/Kelurahan</label>
-                                        <input type="text" class="form-control" id="village" name="village"
-                                            placeholder="Desa/Kelurahan" required>
-                                    </div>
-                                </div>
-                                <div class="row g-3">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="sub_district" class="form-label">Kecamatan</label>
-                                        <input type="text" class="form-control" id="sub_district" name="sub_district"
-                                            placeholder="Kecamatan" required>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="district" class="form-label">Kabupaten/Kota</label>
-                                        <input type="text" class="form-control" id="district" name="district"
-                                            placeholder="Kabupaten/Kota" required>
-                                    </div>
-                                </div>
-                                <input type="hidden" id="latitude" name="latitude">
-                                <input type="hidden" id="longitude" name="longitude">
-                            </div>
-
-                            <!-- Map Section -->
-                            <div style="flex: 1;">
-                                <div id="map" style="height: 300px; width: 100%;"></div>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                            <button type="submit" class="btn btn-primary" id="saveAddressButton">Simpan Alamat</button>
-                        </div>
-                    </form>
-                </div>
+</section>
+<!-- cart + summary -->
+<!-- Add Address Modal -->
+<div class="modal fade" id="addAddressModal" tabindex="-1" aria-labelledby="addAddressModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addAddressModalLabel">Tambah Alamat</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            <form action="{{ url_for('main.save_address') }}" method="post">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <!-- Map Section: Tampil di atas pada perangkat sm ke bawah -->
+                        <div class="col-12 col-md-6 mb-3">
+                            <div id="map" style="height: 300px; width: 100%;"></div>
+                        </div>
+
+                        <!-- Form Section: Tampil di bawah pada perangkat sm ke bawah -->
+                        <div class="col-12 col-md-6">
+                            <div class="mb-3">
+                                <label for="address_type" class="form-label">Jenis Alamat</label>
+                                <input type="text" class="form-control" id="address_type" name="address_type"
+                                    placeholder="Rumah, Kantor, dll" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="street_name" class="form-label">Nama Jalan</label>
+                                <input type="text" class="form-control" id="street_name" name="street_name"
+                                    placeholder="Nama Jalan" required>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6 mb-3">
+                                    <label for="rt_rw" class="form-label">RT/RW</label>
+                                    <input type="text" class="form-control" id="rt_rw" name="rt_rw" placeholder="RT/RW"
+                                        required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="village" class="form-label">Desa/Kelurahan</label>
+                                    <input type="text" class="form-control" id="village" name="village"
+                                        placeholder="Desa/Kelurahan" required>
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6 mb-3">
+                                    <label for="sub_district" class="form-label">Kecamatan</label>
+                                    <input type="text" class="form-control" id="sub_district" name="sub_district"
+                                        placeholder="Kecamatan" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="district" class="form-label">Kabupaten/Kota</label>
+                                    <input type="text" class="form-control" id="district" name="district"
+                                        placeholder="Kabupaten/Kota" required>
+                                </div>
+                            </div>
+                            <input type="hidden" id="latitude" name="latitude">
+                            <input type="hidden" id="longitude" name="longitude">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-primary" id="saveAddressButton">Simpan Alamat</button>
+                </div>
+            </form>
         </div>
+    </div>
+</div>
 
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
-        <script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js"
-            data-client-key="SB-Mid-client-ZeSro0aAvX_ctrEe"></script>
-        <script type="text/javascript">
-            $(document).ready(function () {
-                $('#checkoutButton').on('click', function (event) {
-                    event.preventDefault(); // Prevent the default form submission
 
-                    $.ajax({
-                        url: '/create-transaction',
-                        type: 'POST',
-                        data: $('#deliveryOptionForm').serialize(), // Serialize form data
-                        success: function (response) {
-                            console.log('Response:', response); // Debug response
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+<script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js"
+    data-client-key="SB-Mid-client-ZeSro0aAvX_ctrEe"></script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('#checkoutButton').on('click', function (event) {
+            event.preventDefault(); // Prevent the default form submission
 
-                            if (response.snap_token) {
-                                snap.pay(response.snap_token, {
-                                    onSuccess: function (result) {
-                                        window.location.href = "{{ url_for('main.order') }}";
-                                    },
-                                    onPending: function (result) {
-                                        window.location.href = "{{ url_for('main.order') }}";
-                                    },
-                                    onError: function (result) {
-                                    },
-                                    onClose: function () {
-                                        window.location.href = "{{ url_for('main.order') }}";
-                                    }
-                                });
-                            } else {
-                                alert('Failed to get payment token.');
+            $.ajax({
+                url: '/create-transaction',
+                type: 'POST',
+                data: $('#deliveryOptionForm').serialize(), // Serialize form data
+                success: function (response) {
+                    console.log('Response:', response); // Debug response
+
+                    if (response.snap_token) {
+                        snap.pay(response.snap_token, {
+                            onSuccess: function (result) {
+                                window.location.href = "{{ url_for('main.order') }}";
+                            },
+                            onPending: function (result) {
+                                window.location.href = "{{ url_for('main.order') }}";
+                            },
+                            onError: function (result) {
+                            },
+                            onClose: function () {
+                                window.location.href = "{{ url_for('main.order') }}";
                             }
-                        },
-                        error: function (xhr, status, error) {
-                            console.error('AJAX Error:', error);
-                            alert('An error occurred while creating the transaction.');
-                        }
-                    });
-                });
-            });
-
-            const map = L.map('map').setView([-6.876916, 109.047849], 10);
-
-            // Load the HD tile layer from Thunderforest
-            L.tileLayer('https://tile.thunderforest.com/atlas/{z}/{x}/{y}@2x.png?apikey=6aa02e5af5274e7abd8736a2f111edde', {
-                maxZoom: 20,
-                attribution: '&copy; <a href="https://tile.thunderforest.com/">Thunderforest</a>',
-                tileSize: 512,
-                zoomOffset: -1,
-            }).addTo(map);
-
-            let marker;
-
-            function getLocation() {
-                if (navigator.geolocation) {
-                    navigator.permissions.query({ name: 'geolocation' }).then(function (permissionStatus) {
-                        if (permissionStatus.state === 'granted' || permissionStatus.state === 'prompt') {
-                            navigator.geolocation.getCurrentPosition(showPosition, showError);
-                        } else {
-                            alert('Geolocation access has been denied. Please allow location access in your browser settings.');
-                        }
-
-                        permissionStatus.onchange = function () {
-                            if (this.state === 'granted') {
-                                navigator.geolocation.getCurrentPosition(showPosition, showError);
-                            } else if (this.state === 'denied') {
-                                alert('Geolocation access has been denied. Please allow location access in your browser settings.');
-                            }
-                        };
-                    });
-                } else {
-                    alert('Geolocation is not supported by this browser.');
-                }
-            }
-
-            function showPosition(position) {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-
-                map.setView([lat, lng], 17);
-
-                if (marker) {
-                    marker.setLatLng([lat, lng]).update();
-                } else {
-                    marker = L.marker([lat, lng], { draggable: true }).addTo(map)
-                        .bindPopup('Lokasi Anda Sekarang')
-                        .openPopup();
-                }
-
-                updateCoordinates(lat, lng);
-
-                marker.on('dragend', function (e) {
-                    const { lat, lng } = e.target.getLatLng();
-                    updateCoordinates(lat, lng);
-                });
-            }
-
-            function showError(error) {
-                switch (error.code) {
-                    case error.PERMISSION_DENIED:
-                        alert('User denied the request for Geolocation.');
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        alert('Location information is unavailable.');
-                        break;
-                    case error.TIMEOUT:
-                        alert('The request to get user location timed out.');
-                        break;
-                    case error.UNKNOWN_ERROR:
-                        alert('An unknown error occurred.');
-                        break;
-                }
-            }
-
-            function updateCoordinates(lat, lng) {
-                document.getElementById('latitude').value = lat;
-                document.getElementById('longitude').value = lng;
-
-                // Check distance from default location
-                checkDistance(lat, lng);
-
-                // Update city (kota) field based on coordinates
-                updateAddressFields(lat, lng);
-            }
-
-            function updateAddressFields(lat, lng) {
-                const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`;
-
-                fetch(url)
-                    .then(response => response.json())
-                    .then(data => {
-                        const address = data.address;
-                        if (address) {
-                            document.getElementById('district').value = address.city || address.county || '';
-
-                        }
-                    })
-                    .catch(error => console.error('Error:', error));
-            }
-
-            function checkDistance(lat, lng) {
-                const defaultLat = -6.876916;
-                const defaultLng = 109.047849;
-                const url = `https://router.project-osrm.org/route/v1/driving/${defaultLng},${defaultLat};${lng},${lat}?overview=false`;
-
-                fetch(url)
-                    .then(response => response.json())
-                    .then(data => {
-                        const distance = data.routes[0].distance; // Distance in meters
-                        const distanceInKm = distance / 1000;
-
-                        const saveButton = document.getElementById('saveAddressButton');
-
-                        if (distanceInKm > 40) {
-                            saveButton.disabled = true;
-                            saveButton.classList.add('btn-secondary'); // Optional: Change button style to indicate it's disabled
-                            alert('Jarak dari lokasi toko lebih dari 70 km. Alamat tidak dapat disimpan.');
-                        } else {
-                            saveButton.disabled = false;
-                            saveButton.classList.remove('btn-secondary'); // Optional: Restore original button style
-                        }
-                    })
-                    .catch(error => console.error('Error:', error));
-            }
-
-            map.on('click', function (e) {
-                const { lat, lng } = e.latlng;
-
-                if (marker) {
-                    marker.setLatLng([lat, lng]).update();
-                } else {
-                    marker = L.marker([lat, lng], { draggable: true }).addTo(map)
-                        .bindPopup('Lokasi Anda Sekarang')
-                        .openPopup();
-
-                    marker.on('dragend', function (e) {
-                        const { lat, lng } = e.target.getLatLng();
-                        updateCoordinates(lat, lng);
-                    });
-                }
-
-                updateCoordinates(lat, lng);
-            });
-
-            document.getElementById('addAddressModal').addEventListener('shown.bs.modal', function () {
-                map.invalidateSize();
-                getLocation();
-            });
-
-            // Mendapatkan tanggal saat ini
-            const today = new Date();
-            today.setDate(today.getDate() + 3);
-            const dd = String(today.getDate()).padStart(2, '0');
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const yyyy = today.getFullYear();
-            const minDate = `${yyyy}-${mm}-${dd}`;
-
-            // Set atribut min pada input date
-            const deliveryDateInput = document.getElementById('delivery-date');
-            const deliveryTimeInput = document.getElementById('delivery-time');
-
-            // Disable input waktu di awal
-            deliveryTimeInput.disabled = true;
-
-            deliveryDateInput.setAttribute('min', minDate);
-
-            // Validasi input tanggal saat field kehilangan fokus (blur)
-            function validateDate() {
-                const selectedDate = new Date(deliveryDateInput.value);
-                const currentDate = new Date();
-                currentDate.setDate(currentDate.getDate() + 2); // 3 hari ke depan
-                // Validasi setelah tanggal dipilih
-                if (deliveryDateInput.value) {
-                    if (selectedDate < currentDate) {
-                        alert("Tanggal pengiriman harus lebih dari atau sama dengan 3 hari dari hari ini.");
-                        deliveryDateInput.value = ''; // Reset input tanggal
-                        deliveryTimeInput.disabled = true; // Disable kembali waktu jika tanggal tidak valid
+                        });
                     } else {
-                        // Enable input waktu jika tanggal valid
-                        deliveryTimeInput.disabled = false;
+                        alert('Failed to get payment token.');
                     }
+                },
+                error: function (xhr, status, error) {
+                    console.error('AJAX Error:', error);
+                    alert('An error occurred while creating the transaction.');
                 }
-            }
+            });
+        });
+    });
 
-            // Validasi input waktu saat field kehilangan fokus (blur)
-            function validateTime() {
-                const timeValue = deliveryTimeInput.value;
+    const map = L.map('map').setView([-6.876916, 109.047849], 10);
 
-                if (timeValue) {
-                    const [hours, minutes] = timeValue.split(':').map(Number);
-                    if ((hours < 6 || hours > 19)) {
-                        alert("Waktu Pengiriman Hanya Pada 06:00 Sampai 19:00");
-                        deliveryTimeInput.value = ''; // Reset input waktu
+    // Load the HD tile layer from Thunderforest
+    L.tileLayer('https://tile.thunderforest.com/atlas/{z}/{x}/{y}@2x.png?apikey=6aa02e5af5274e7abd8736a2f111edde', {
+        maxZoom: 20,
+        attribution: '&copy; <a href="https://tile.thunderforest.com/">Thunderforest</a>',
+        tileSize: 512,
+        zoomOffset: -1,
+    }).addTo(map);
+
+    let marker;
+
+    function getLocation() {
+        if (navigator.geolocation) {
+            navigator.permissions.query({ name: 'geolocation' }).then(function (permissionStatus) {
+                if (permissionStatus.state === 'granted' || permissionStatus.state === 'prompt') {
+                    navigator.geolocation.getCurrentPosition(showPosition, showError);
+                } else {
+                    alert('Geolocation access has been denied. Please allow location access in your browser settings.');
+                }
+
+                permissionStatus.onchange = function () {
+                    if (this.state === 'granted') {
+                        navigator.geolocation.getCurrentPosition(showPosition, showError);
+                    } else if (this.state === 'denied') {
+                        alert('Geolocation access has been denied. Please allow location access in your browser settings.');
                     }
+                };
+            });
+        } else {
+            alert('Geolocation is not supported by this browser.');
+        }
+    }
+
+    function showPosition(position) {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        map.setView([lat, lng], 17);
+
+        if (marker) {
+            marker.setLatLng([lat, lng]).update();
+        } else {
+            marker = L.marker([lat, lng], { draggable: true }).addTo(map)
+                .bindPopup('Lokasi Anda Sekarang')
+                .openPopup();
+        }
+
+        updateCoordinates(lat, lng);
+
+        marker.on('dragend', function (e) {
+            const { lat, lng } = e.target.getLatLng();
+            updateCoordinates(lat, lng);
+        });
+    }
+
+    function showError(error) {
+        switch (error.code) {
+            case error.PERMISSION_DENIED:
+                alert('User denied the request for Geolocation.');
+                break;
+            case error.POSITION_UNAVAILABLE:
+                alert('Location information is unavailable.');
+                break;
+            case error.TIMEOUT:
+                alert('The request to get user location timed out.');
+                break;
+            case error.UNKNOWN_ERROR:
+                alert('An unknown error occurred.');
+                break;
+        }
+    }
+
+    function updateCoordinates(lat, lng) {
+        document.getElementById('latitude').value = lat;
+        document.getElementById('longitude').value = lng;
+
+        // Check distance from default location
+        checkDistance(lat, lng);
+
+        // Update city (kota) field based on coordinates
+        updateAddressFields(lat, lng);
+    }
+
+    function updateAddressFields(lat, lng) {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                const address = data.address;
+                if (address) {
+                    document.getElementById('district').value = address.city || address.county || '';
+
                 }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    function checkDistance(lat, lng) {
+        const defaultLat = -6.876916;
+        const defaultLng = 109.047849;
+        const url = `https://router.project-osrm.org/route/v1/driving/${defaultLng},${defaultLat};${lng},${lat}?overview=false`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                const distance = data.routes[0].distance; // Distance in meters
+                const distanceInKm = distance / 1000;
+
+                const saveButton = document.getElementById('saveAddressButton');
+
+                if (distanceInKm > 40) {
+                    saveButton.disabled = true;
+                    saveButton.classList.add('btn-secondary'); // Optional: Change button style to indicate it's disabled
+                    alert('Jarak dari lokasi toko lebih dari 70 km. Alamat tidak dapat disimpan.');
+                } else {
+                    saveButton.disabled = false;
+                    saveButton.classList.remove('btn-secondary'); // Optional: Restore original button style
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    map.on('click', function (e) {
+        const { lat, lng } = e.latlng;
+
+        if (marker) {
+            marker.setLatLng([lat, lng]).update();
+        } else {
+            marker = L.marker([lat, lng], { draggable: true }).addTo(map)
+                .bindPopup('Lokasi Anda Sekarang')
+                .openPopup();
+
+            marker.on('dragend', function (e) {
+                const { lat, lng } = e.target.getLatLng();
+                updateCoordinates(lat, lng);
+            });
+        }
+
+        updateCoordinates(lat, lng);
+    });
+
+    document.getElementById('addAddressModal').addEventListener('shown.bs.modal', function () {
+        map.invalidateSize();
+        getLocation();
+    });
+
+    // Mendapatkan tanggal saat ini
+    const today = new Date();
+    today.setDate(today.getDate() + 3);
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    const minDate = `${yyyy}-${mm}-${dd}`;
+
+    // Set atribut min pada input date
+    const deliveryDateInput = document.getElementById('delivery-date');
+    const deliveryTimeInput = document.getElementById('delivery-time');
+
+    // Disable input waktu di awal
+    deliveryTimeInput.disabled = true;
+
+    deliveryDateInput.setAttribute('min', minDate);
+
+    // Validasi input tanggal saat field kehilangan fokus (blur)
+    function validateDate() {
+        const selectedDate = new Date(deliveryDateInput.value);
+        const currentDate = new Date();
+        currentDate.setDate(currentDate.getDate() + 2); // 3 hari ke depan
+        // Validasi setelah tanggal dipilih
+        if (deliveryDateInput.value) {
+            if (selectedDate < currentDate) {
+                alert("Tanggal pengiriman harus lebih dari atau sama dengan 3 hari dari hari ini.");
+                deliveryDateInput.value = ''; // Reset input tanggal
+                deliveryTimeInput.disabled = true; // Disable kembali waktu jika tanggal tidak valid
+            } else {
+                // Enable input waktu jika tanggal valid
+                deliveryTimeInput.disabled = false;
             }
+        }
+    }
 
-            // Event listeners untuk validasi saat input kehilangan fokus (blur)
-            deliveryDateInput.addEventListener('blur', validateDate);
-            deliveryTimeInput.addEventListener('blur', validateTime);
+    // Validasi input waktu saat field kehilangan fokus (blur)
+    function validateTime() {
+        const timeValue = deliveryTimeInput.value;
 
-        </script>
-        {% endblock %}
+        if (timeValue) {
+            const [hours, minutes] = timeValue.split(':').map(Number);
+            if ((hours < 6 || hours > 19)) {
+                alert("Waktu Pengiriman Hanya Pada 06:00 Sampai 19:00");
+                deliveryTimeInput.value = ''; // Reset input waktu
+            }
+        }
+    }
+
+    // Event listeners untuk validasi saat input kehilangan fokus (blur)
+    deliveryDateInput.addEventListener('blur', validateDate);
+    deliveryTimeInput.addEventListener('blur', validateTime);
+
+</script>
+{% endblock %}

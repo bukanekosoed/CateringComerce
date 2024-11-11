@@ -1,9 +1,28 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request,session
 from .models import Users,Admin
-
-
+from authlib.integrations.flask_client import OAuth
+import os
+from dotenv import load_dotenv
 # Blueprint untuk autentikasi
 auth_bp = Blueprint('auth', __name__)
+
+# Inisialisasi OAuth
+oauth = OAuth()
+
+# Konfigurasi untuk Google OAuth
+google = oauth.register(
+    name='google',
+    client_id=os.getenv('GOOGLE_OAUTH_CLIENT_ID'),  # Ganti dengan Client ID Google kamu
+    client_secret=os.getenv('GOOGLE_OAUTH_CLIENT_SECRET'),  # Ganti dengan Client Secret Google kamu
+    authorize_url='https://accounts.google.com/o/oauth2/auth',
+    authorize_params=None,
+    access_token_url='https://accounts.google.com/o/oauth2/token',
+    access_token_params=None,
+    refresh_token_url=None,
+    redirect_uri='http://127.0.0.1:5000/auth/login/google',  # Pastikan ini sesuai
+    client_kwargs={'scope': 'openid profile email'},
+    jwks_url="https://www.googleapis.com/oauth2/v3/certs"  # Menambahkan URL JWKS
+)
 
 @auth_bp.route('/register', methods=['POST','GET'])
 def register():
@@ -76,6 +95,41 @@ def login():
     
     return render_template('auth/login.html')
 
+@auth_bp.route('/login/google')
+def google_login():
+    # Redirect user to Google for OAuth authentication
+    redirect_uri = url_for('auth.google_callback', _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+@auth_bp.route('/auth/callback')
+def google_callback():
+    # Get the token from Google after successful authentication
+    token = google.authorize_access_token()
+    user_info = google.parse_id_token(token)
+
+    # Check if the user already exists in the database
+    user = Users.objects(email=user_info['email']).first()
+    
+    if not user:
+        # Jika user baru, bisa buat akun baru
+        user = Users(
+            name=user_info['name'],
+            email=user_info['email'],
+            profile_image=user_info['picture']
+        )
+        user.save()
+
+    # Simpan user ID dan role ke session
+    session['user_id'] = str(user.id)
+    session['user_role'] = 'user'
+    
+    flash('Google login successful!', 'primary')
+    
+    # Redirect ke halaman yang sesuai (misalnya homepage atau dashboard)
+    next_url = session.pop('next_url', url_for('main.index'))
+    return redirect(next_url)
+
+# Route untuk logout
 @auth_bp.route('/logout')
 def logout():
     # Clear the user session
@@ -83,3 +137,5 @@ def logout():
     session.pop('user_role', None)
     flash('You have been logged out successfully.', 'primary')
     return redirect(url_for('main.index'))
+
+

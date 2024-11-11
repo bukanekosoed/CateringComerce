@@ -44,7 +44,8 @@
                             id="cartDropdown">
                             <li class="px-3 py-2 d-flex align-items-center">
                                 <h5 class="mb-0">Keranjang Saya ( {{ cart_items | length }} )</h5>
-                                <a href="{{url_for('main.cart')}}" class="ms-auto text-primary">Lihat</a> <!-- Right aligned "Lihat" -->
+                                <a href="{{url_for('main.cart')}}" class="ms-auto text-primary">Lihat</a>
+                                <!-- Right aligned "Lihat" -->
                             </li>
 
                             {% if cart_items %}
@@ -125,35 +126,34 @@
 <!-- Navbar Bottom for small screens -->
 <div class="container-fluid fixed-bottom d-flex d-lg-none bg-white rounded-top shadow shadow-sm">
     <nav class="navbar navbar-light navbar-expand-sm w-100">
-        <div class="container p-0">
-            <div class="d-flex justify-content-around w-100">
+        <div class="container">
+            <div class="d-flex justify-content-around w-100 align-items-center">
                 <a href="{{ url_for('main.index') }}"
-                    class="nav-item nav-link d-flex align-items-center {% if request.endpoint == 'main.index' %} bg-primary text-white rounded-pill p-3 {% endif %}">
+                    class="nav-item nav-link d-flex flex-column align-items-center {% if request.endpoint == 'main.index' %} bg-primary text-white rounded-3 p-3 {% endif %}">
                     <i class='bx bx-home-alt'></i>
-                    {% if request.endpoint == 'main.index' %}
-                    <small class="ms-2 ">Home</small>
-                    {% endif %}
+                    <small class="mt-1">Home</small>
                 </a>
+
                 <a href="{{ url_for('main.shop') }}"
-                    class="nav-item nav-link d-flex align-items-center {% if request.endpoint == 'main.shop' %} bg-primary text-white rounded-pill p-3 {% endif %}">
+                    class="nav-item nav-link d-flex flex-column align-items-center {% if request.endpoint == 'main.shop' %} bg-primary text-white rounded-3 p-3 {% endif %}">
                     <i class='bx bx-store'></i>
-                    {% if request.endpoint == 'main.shop' %}
+                    
                     <small class="ms-2">Shop</small>
-                    {% endif %}
+                    
                 </a>
                 <a href="{{ url_for('main.order') }}"
-                    class="nav-item nav-link d-flex align-items-center {% if request.endpoint == 'main.order' %} bg-primary text-white rounded-pill p-3 {% endif %}">
+                    class="nav-item nav-link d-flex flex-column align-items-center {% if request.endpoint == 'main.order' %} bg-primary text-white rounded-3 p-3 {% endif %}">
                     <i class='bx bx-receipt'></i>
-                    {% if request.endpoint == 'main.order' %}
+                    
                     <small class="ms-2">Pesanan</small>
-                    {% endif %}
+                    
                 </a>
                 <a href="{{ url_for('main.profile') }}"
-                    class="nav-item nav-link d-flex align-items-center {% if request.endpoint == 'main.profile' %} bg-primary text-white rounded-pill p-3 {% endif %}">
+                    class="nav-item nav-link d-flex flex-column align-items-center {% if request.endpoint == 'main.profile' %} bg-primary text-white rounded-3 p-3 {% endif %}">
                     <i class='bx bx-user'></i>
-                    {% if request.endpoint == 'main.profile' %}
-                    <small class="ms-2">Profile</small>
-                    {% endif %}
+                    
+                    <small class="ms-2">Akun</small>
+                    
                 </a>
             </div>
         </div>
