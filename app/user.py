@@ -3,7 +3,8 @@ import requests
 from .models import (Kategori,Produk, get_products_by_category, 
                      get_all_categories, get_product_count_by_category, 
                      get_total_product_count,get_all_products,
-                     Users, Cart,CartItem,Address,Orders
+                     Users, Cart,CartItem,Address,Orders, search_products_by_name,
+                     count_products_by_name
                     )
 from .decorators import login_required, user_required
 from math import ceil
@@ -65,35 +66,50 @@ def index():
         
     return render_template('user/index.html', kategoris = Kategori.objects.all(),
                            produk = produk_list,page='produk')
-    
-@user_bp.route('/shop')
 
+
+
+   
+@user_bp.route('/shop')
 @user_required
 def shop():
     kategori_id = request.args.get('kategori')  # Ambil parameter kategori dari query string
+    query = request.args.get('q')  # Ambil parameter pencarian dari query string
     page = int(request.args.get('page', 1))  # Ambil parameter page dari URL, default ke 1
     limit = 6
+
     produk = []
     total_produk = 0
-    if kategori_id:
+
+    if query:  # Jika ada parameter pencarian
+        produk = search_products_by_name(query, page, limit)  # Cari produk berdasarkan nama
+        total_produk = count_products_by_name(query)  # Hitung jumlah hasil pencarian
+    elif kategori_id:  # Jika ada parameter kategori
         produk = get_products_by_category(kategori_id, page, limit)
         total_produk = get_product_count_by_category(kategori_id)
-    else:
+    else:  # Jika tidak ada pencarian atau kategori, tampilkan semua produk
         produk = get_all_products(page, limit)
-        total_produk = get_total_product_count()  # Ambil semua produk jika tidak ada kategori yang dipilih
+        total_produk = get_total_product_count()
+
     total_pages = ceil(total_produk / limit)
     total_produk = len(produk)  # Jumlah produk yang diambil
     kategoris = get_all_categories()  # Ambil semua kategori
     kategori_counts = {kategori.id: get_product_count_by_category(kategori.id) for kategori in kategoris}
     total_all_products = get_total_product_count()
-    return render_template('user/shop.html',
-                           produk=produk, kategoris=kategoris, 
-                           kategori_counts=kategori_counts, 
-                           total=total_produk,
-                           total_all_products=total_all_products,
-                           total_pages=total_pages, 
-                           current_page=page,
-                           page='another')
+
+    return render_template(
+        'user/shop.html',
+        produk=produk,
+        kategoris=kategoris,
+        kategori_counts=kategori_counts,
+        total=total_produk,
+        total_all_products=total_all_products,
+        total_pages=total_pages,
+        current_page=page,
+        query=query,  # Kirimkan query pencarian ke template
+        page='another'
+    )
+
 
 
 
@@ -584,15 +600,25 @@ def create_transaction():
 
 @user_bp.route('/order')
 def order():
+    # Mendapatkan user_id dari session
     user_id = session.get('user_id')
     if not user_id:
         flash('User not logged in.', 'warning')
-        return redirect(url_for('auth.login'))  # Redirect to login if user is not logged in
+        return redirect(url_for('auth.login'))  # Redirect ke login jika user belum login
 
-    # Fetch the user's orders
+    # Mendapatkan status filter dari query parameter, default 'all'
+    status_filter = request.args.get('status', 'all')
+
+    # Mengambil user berdasarkan user_id
     user = Users.objects(id=user_id).first()
-    orders = Orders.objects(user=user).order_by('-transaction_time')
 
+    # Mengambil pesanan berdasarkan status filter
+    if status_filter == 'all':
+        orders = Orders.objects(user=user).order_by('-transaction_time')
+    else:
+        orders = Orders.objects(user=user, order_status=status_filter).order_by('-transaction_time')
+
+    # Memformat tanggal pengiriman dan waktu transaksi untuk setiap pesanan
     for order in orders:
         # Mengonversi dan memformat delivery_date
         delivery_date = order['delivery_date']
@@ -617,8 +643,7 @@ def order():
         formatted_transaction_time = format_datetime(transaction_time, format='EEEE, dd MMMM yyyy HH:mm', locale='id_ID')
         order['transaction_time'] = formatted_transaction_time
 
-
-    return render_template('user/order.html', orders=orders)
+    return render_template('user/order.html', orders=orders, status=status_filter)
 
 
 @user_bp.route('/payment/get_snap_token/<int:order_id>', methods=['GET'])
@@ -647,7 +672,6 @@ def midtrans_webhook():
     fraud_status = webhook_data.get('fraud_status')
     settlement_time = webhook_data.get('settlement_time')
     
-    
     # Logika untuk memproses data webhook
     if order_id:
         # Cari pesanan berdasarkan order_id
@@ -663,24 +687,28 @@ def midtrans_webhook():
                     order.payment_status = 'challenge'
                 else:
                     order.payment_status = 'paid'
+                    order.order_status = 'sedang diproses'  # Set status pesanan menjadi 'sedang diproses'
             else:
                 order.payment_status = 'paid'
+                order.order_status = 'sedang diproses'  # Set status pesanan menjadi 'sedang diproses'
         elif transaction_status == 'settlement':
             order.payment_status = 'berhasil'
+            order.order_status = 'sedang diproses'  # Set status pesanan menjadi 'sedang diproses'
         elif transaction_status == 'pending':
             order.payment_status = 'menunggu'
         elif transaction_status == 'deny':
             order.payment_status = 'gagal'
+            order.order_status = 'dibatalkan'
         elif transaction_status == 'expire':
             order.payment_status = 'gagal'
+            order.order_status = 'dibatalkan'
         elif transaction_status == 'cancel':
             order.payment_status = 'dibatalkan'
+            order.order_status = 'dibatalkan'
 
         # Jika settlement_time ada, update waktu settlement di database
         if settlement_time:
             order.settlement_time = settlement_time
-        
-       
         
         # Simpan transaction_id dan payment_type
         if transaction_id:
@@ -698,6 +726,7 @@ def midtrans_webhook():
         return jsonify({"message": "Webhook received and processed"}), 200
     else:
         return jsonify({"error": "Order ID not found in webhook data"}), 400
+
 
 
 @user_bp.route('/print-pdf/<transaction_id>')

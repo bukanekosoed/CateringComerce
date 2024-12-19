@@ -16,6 +16,34 @@
         </div>
     </div>
 
+    <!-- Search and Filter Form -->
+    <form method="get" action="{{ url_for('admin.produk') }}" class="mb-4">
+        <div class="row align-items-end">
+            <!-- Search Input -->
+            <div class="col-md-3">
+                <label for="search" class="form-label">Cari Produk</label>
+                <input type="text" name="search" id="search" class="form-control" value="{{ search_query }}">
+            </div>
+
+            <!-- Category Filter -->
+            <div class="col-md-3">
+                <label for="categoryFilter" class="form-label">Kategori</label>
+                <select class="form-select" id="categoryFilter" name="categoryFilter">
+                    <option value="">Semua Kategori</option>
+                    {% for kategori in kategoris %}
+                    <option value="{{ kategori.id }}" {% if kategori.id==category_filter %}selected{% endif %}>
+                        {{ kategori.kategoriNama }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Terapkan</button>
+            </div>
+        </div>
+    </form>
 
     <!-- Product List Table -->
     <div class="col-lg-12 grid-margin stretch-card">
@@ -154,7 +182,8 @@
                         <div class="col-md-6">
                             <div class="form-group mb-3">
                                 <label for="minPembelian">Min Pembelian</label>
-                                <input type="number" class="form-control" id="minPembelian" name="minPembelian" value="{{ produk.minPembelian }}" required>
+                                <input type="number" class="form-control" id="minPembelian" name="minPembelian"
+                                    value="{{ produk.minPembelian }}" required>
                             </div>
                         </div>
                     </div>
@@ -203,8 +232,8 @@
 
 <!-- Delete Kategori Modal -->
 <form action="{{ url_for('admin.delete_produk', produk_id=produk.id) }}" method="POST">
-    <div class="modal fade" id="deleteKategoriModal-{{ produk.id }}" tabindex="-1"
-        aria-labelledby="deleteKategoriLabel" aria-hidden="true">
+    <div class="modal fade" id="deleteKategoriModal-{{ produk.id }}" tabindex="-1" aria-labelledby="deleteKategoriLabel"
+        aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">

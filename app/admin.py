@@ -1,13 +1,15 @@
-from flask import Blueprint, render_template,request, redirect,jsonify,flash,url_for,abort
+from flask import Blueprint, render_template,request, redirect,jsonify,flash,url_for,abort,make_response, send_file
 from .models import Kategori,Produk,Orders,Users
 from mongoengine.errors import NotUniqueError,ValidationError
 from werkzeug.utils import secure_filename
 from gridfs.errors import NoFile
+from math import ceil
 import io
+from openpyxl import Workbook
 from .decorators import login_required, admin_required
 from datetime import datetime
 from babel.dates import format_datetime
-
+from bson import ObjectId
 
 
 admin_bp = Blueprint('admin', __name__)
@@ -41,13 +43,44 @@ def index():
                            year=year)
 
 ################################## Produk ###############################
-@admin_bp.route('/produk')
+@admin_bp.route('/produk', methods=['GET'])
 def produk():
-    page = request.args.get('page', 1, type=int)  # Get the current page number from the query string, default to 1
-    per_page = 10  # Set the number of items per page
-    total_produks = Produk.objects.count()  # Get the total count of items
-    
-    paginated_produks = Produk.objects.skip((page - 1) * per_page).limit(per_page)
+    search_query = request.args.get('search', '')  # Pencarian berdasarkan nama produk
+    category_filter = request.args.get('categoryFilter', '')  # Filter berdasarkan kategori
+    page = request.args.get('page', 1, type=int)  # Get current page, default to 1 if not specified
+    per_page = 10  # Jumlah item per halaman
+
+    # Membuat query dasar
+    query = Produk.objects.order_by('-created_at')  # Urutkan berdasarkan produk terbaru
+
+    # Pencarian berdasarkan nama produk
+    if search_query:
+        query = query.filter(produkNama__icontains=search_query)
+
+    # Filter berdasarkan kategori (memastikan category_filter adalah ObjectId)
+    if category_filter:
+        query = query.filter(kategori=ObjectId(category_filter))
+
+    # Hitung jumlah total produk yang sesuai filter
+    total_produks = query.count()
+
+    # Paginasi query
+    paginated_produks = query.skip((page - 1) * per_page).limit(per_page)
+
+    # Ambil daftar kategori untuk dropdown filter
+    kategoris = Kategori.objects.all()
+
+    # Render template dengan data produk, kategori, dan lainnya
+    return render_template(
+        'admin/produk.html',
+        produk=paginated_produks,
+        total_produks=total_produks,
+        page=page,
+        per_page=per_page,
+        kategoris=kategoris,
+        search_query=search_query,
+        category_filter=category_filter
+    )
     
 
     return render_template('admin/produk.html',
@@ -236,22 +269,147 @@ def delete_kategori(kategori_id):
         flash('Kategori dan gambar berhasil dihapus!', 'success')
     return redirect(url_for('admin.kategori'))
 
-@admin_bp.route('/pesanan',methods=['GET','POST'])
+
+@admin_bp.route('/pesanan', methods=['GET', 'POST'])
 def pesanan():
-    orders = Orders.objects.all().order_by('-transaction_time')
+    # Mendapatkan parameter filter dari query string
+    status_filter = request.args.get('status')  # Filter berdasarkan status
+    delivery_filter = request.args.get('delivery_option', None)
+    date_start = request.args.get('date_start', None)  # Filter tanggal mulai
+    date_end = request.args.get('date_end', None)      # Filter tanggal akhir
+    page = request.args.get('page', default=1, type=int)  # Pagination, default halaman 1
+    per_page = 10  # Jumlah data per halaman
+
+    # Query dasar untuk Orders
+    query = Orders.objects.order_by('-transaction_time')
+
+    # Filter status pembayaran
+    if status_filter:
+        query = query.filter(payment_status=status_filter)
+
+    # Filter opsi pengiriman
+    if delivery_filter:
+        query = query.filter(delivery_option=delivery_filter)
+
+    # Filter tanggal pengiriman (delivery_date)
+    if date_start:
+        try:
+            start_date = datetime.strptime(date_start, '%Y-%m-%d')
+            start_date_str = start_date.strftime('%Y-%m-%d')  # Format sesuai dengan format di database
+            query = query.filter(delivery_date__gte=f"{start_date_str} 00:00")  # Menambahkan jam 00:00
+        except ValueError:
+            pass  # Abaikan jika format tanggal salah
+
+    if date_end:
+        try:
+            end_date = datetime.strptime(date_end, '%Y-%m-%d')
+            end_date_str = end_date.strftime('%Y-%m-%d')  # Format sesuai dengan format di database
+            query = query.filter(delivery_date__lte=f"{end_date_str} 23:59")  # Menambahkan jam 23:59
+        except ValueError:
+            pass  # Abaikan jika format tanggal salah
+
+    # Total jumlah pesanan untuk pagination
+    total_orders = query.count()
+
+    # Menghitung offset dan mendapatkan data
+    orders = query.skip((page - 1) * per_page).limit(per_page)
+
+    # Memformat tanggal dengan lokal Indonesia
     for order in orders:
         delivery_date = order['delivery_date']
-
-        # Pastikan delivery_date adalah objek datetime
         if isinstance(delivery_date, str):
-            # Mengonversi string ke objek datetime
             delivery_date = datetime.strptime(delivery_date, '%Y-%m-%d %H:%M')
-
-        # Memformat tanggal dengan lokal Indonesia
-        formatted_date = format_datetime(delivery_date, format='EEEE, dd MMMM yyyy HH:mm ', locale='id_ID')
+        formatted_date = format_datetime(delivery_date, format='EEEE, dd MMMM yyyy HH:mm', locale='id_ID')
         order['delivery_date'] = formatted_date
 
-    return render_template('admin/pesanan.html',orders=orders)
+    # Proses POST untuk mengubah status pesanan
+    if request.method == 'POST':
+        order_id = request.form.get('order_id')  # Ambil order_id dari form
+        new_status = request.form.get('order_status')  # Ambil status baru dari form
+
+        # Validasi apakah status yang diterima sesuai dengan pilihan yang valid
+        valid_statuses = ["sedang_diproses", "dikirim", "selesai"]
+        if new_status not in valid_statuses:
+            flash("Status pesanan tidak valid", "danger")
+            return redirect(url_for('admin.pesanan'))  # Redirect kembali ke halaman pesanan
+
+        # Cari pesanan berdasarkan order_id
+        order = Orders.objects(id=order_id).first()
+        if order:
+            order.update(set__order_status=new_status)  # Update status pesanan
+            flash("Status pesanan berhasil diperbarui!", "success")
+        else:
+            flash("Pesanan tidak ditemukan", "danger")
+
+        return redirect(url_for('admin.pesanan'))  # Redirect kembali ke halaman pesanan
+
+    # Total halaman untuk navigasi
+    total_pages = ceil(total_orders / per_page)
+
+    return render_template(
+        'admin/pesanan.html',
+        orders=orders,
+        total_pages=total_pages,
+        current_page=page,
+        status_filter=status_filter,
+        delivery_filter=delivery_filter,
+        date_start=date_start,
+        date_end=date_end
+    )
+
+
+
+
+@admin_bp.route('/user', methods=['GET'])
+def user():
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    search_query = request.args.get('search', '')
+
+    # Membuat query untuk menampilkan daftar user
+    query = Users.objects()
+
+    if search_query:
+        query = query.filter(name__icontains=search_query)
+
+    # Mengambil total user untuk pagination
+    total_users = query.count()
+
+    # Pagination
+    paginated_users = query.skip((page - 1) * per_page).limit(per_page)
+
+    return render_template('admin/user.html', 
+                           users=paginated_users, 
+                           total_users=total_users, 
+                           page=page, 
+                           per_page=per_page, 
+                           search_query=search_query)
+
+@admin_bp.route('/user/delete/<string:user_id>', methods=['POST'])
+def delete_user(user_id):
+    try:
+        # Cari pengguna berdasarkan ID
+        user = Users.objects.get(id=user_id)
+        
+        # Hapus pengguna
+        user.delete()
+        
+        # Berikan pesan sukses
+        flash(f'Pengguna {user.name} berhasil dihapus.', 'success')
+    except Users.DoesNotExist:
+        # Jika pengguna tidak ditemukan
+        flash('Pengguna tidak ditemukan.', 'error')
+    except Exception as e:
+        # Tangani kesalahan lainnya
+        flash(f'Kesalahan saat menghapus pengguna: {str(e)}', 'error')
+    
+    # Redirect kembali ke halaman daftar pengguna
+    return redirect(url_for('admin.user'))
+
+
+@admin_bp.route('/laporan-penjualan')
+def laporan():
+    return render_template('admin/laporan.html')
 
 @admin_bp.route('/revenue/<int:year>')
 def revenue(year):
@@ -261,3 +419,4 @@ def revenue(year):
         monthly_revenue.append(total_revenue)
 
     return jsonify(monthly_revenue)
+

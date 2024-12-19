@@ -6,249 +6,138 @@ Riwayat Pemesanan
 {% set footer = True %}
 {% block content %}
 <div class="container mt-4">
-    {% if orders %}
-
     <h2 class="mb-4">Riwayat Pemesanan Saya</h2>
-    <!-- Card layout for order history -->
-    <!-- Loop through each order -->
-    {% for order in orders %}
-    <div class="row">
-        <div class="col">
-            <div class="card mb-4 shadow-lg border-0 p-4">
-                <!-- Order Details -->
-                <div class="card-header bg-white d-flex justify-content-between align-items-center border-0">
-                    <div>
-                        <h6 class="card-title mb-0">{{ order.order_id }}</h6>
-                        <p class="card-text mb-0">
-                            <small class="text-muted">Tanggal {% if order.delivery_option == 'pickup' %} Pengambilan {%
-                                else %} Pengiriman {% endif %}: {{ order.delivery_date }}</small>
-                        </p>
-                    </div>
-                    <!-- Payment Status -->
-                    <div class="d-flex align-items-center">
-                        {% if order.payment_status == 'menunggu' %}
-                        <span class="badge bg-secondary text-white">Pending</span>
-                        {% elif order.payment_status == 'gagal' %}
-                        <span class="badge bg-danger text-white">Gagal</span>
-                        {% else %}
-                        {% if order.transaction_time %}
-                        <span class="me-2">{{ order.transaction_time }}</span>
-                        {% endif %}
-                        <span class="badge bg-primary text-white">{{ order.payment_status | title }}</span>
-                        {% endif %}
-                    </div>
 
+    <!-- Tab Navigasi untuk Filter Status Pesanan -->
+    <ul class="nav nav-tabs" id="orderTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {% if status == 'all' %}active{% endif %}"
+                href="{{ url_for('main.order', status='all') }}">
+                Semua Pesanan
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {% if status == 'sedang_diproses' %}active{% endif %}"
+                href="{{ url_for('main.order', status='sedang_diproses') }}">
+                Sedang Diproses
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {% if status == 'dikirim' %}active{% endif %}"
+                href="{{ url_for('main.order', status='dikirim') }}">
+                Dikirim
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {% if status == 'selesai' %}active{% endif %}"
+                href="{{ url_for('main.order', status='selesai') }}">
+                Selesai
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {% if status == 'dibatalkan' %}active{% endif %}"
+                href="{{ url_for('main.order', status='dibatalkan') }}">
+                Dibatalkan
+            </a>
+        </li>
+    </ul>
 
-                </div>
-
-                <!-- Product List -->
-                <div class="card-body">
-                    <div class="product-list">
-                        {% for item in order.items %}
-                        <div class="d-flex justify-content-start align-items-center mb-3">
-                            <img src="{{ url_for('image.image', image_id=item.product.id) }}"
-                                alt="{{ item.product.produkNama }}" class="img-fluid rounded me-3"
-                                style="width: 100px; height: 100px;">
-                            <div class="flex-grow-1">
-                                <p class="mb-1"><strong>{{ item.product.produkNama }}</strong></p>
-                                <p class="mb-1 text-muted">{{ item.quantity }} x {{ item.product.produkHarga | idr }}
+    <div class="tab-content mt-3">
+        <div class="tab-pane fade show active" id="allOrders" role="tabpanel" aria-labelledby="allOrders-tab">
+            {% if orders %}
+            <!-- Loop through orders based on the selected status -->
+            {% for order in orders %}
+            <div class="row">
+                <div class="col">
+                    <div class="card mb-4 shadow-lg border-0 p-4">
+                        <!-- Order Details -->
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center border-0">
+                            <div>
+                                <h6 class="card-title mb-0">{{ order.order_id }}</h6>
+                                <p class="card-text mb-0">
+                                    <small class="text-muted">Tanggal {% if order.delivery_option == 'pickup' %}
+                                        Pengambilan {% else %} Pengiriman {% endif %}: {{ order.delivery_date }}</small>
                                 </p>
                             </div>
-                            <div class="text-end">
-                                <p class="mb-1"><strong>Total: {{ (item.product.produkHarga * item.quantity) | idr
-                                        }}</strong></p>
+                        
+                            <div class="d-flex flex-column align-items-end">
+                                <!-- Payment Status -->
+                                {% if order.payment_status == 'menunggu' %}
+                                <span class="badge bg-warning text-dark">Menunggu Pembayaran</span>
+                                
+                                {% endif %}
+                        
+                                <!-- Order Status -->
+                                {% if order.order_status == 'sedang_diproses' %}
+                                <span class="badge bg-info text-white mt-1">Sedang Diproses</span>
+                                {% elif order.order_status == 'dikirim' %}
+                                <span class="badge bg-primary text-white mt-1">Dikirim</span>
+                                {% elif order.order_status == 'selesai' %}
+                                <span class="badge bg-success text-white mt-1">Selesai</span>
+                                {% elif order.order_status == 'dibatalkan' %}
+                                <span class="badge bg-danger text-white mt-1">Dibatalkan</span>
+                                {% endif %}
                             </div>
                         </div>
-                        {% endfor %}
-                    </div>
-                </div>
+                        
 
-                <!-- Order Footer and Modal Trigger -->
-                <div class="card-footer bg-white border-0 d-flex justify-content-between align-items-center">
-                    <p class="mb-0">Total Harga: <strong>{{ order.grand_total | idr }}</strong></p>
-
-                    <!-- Payment Button or Receipt Modal Trigger -->
-                    {% if order.payment_status == 'menunggu' %}
-                    <button class="btn btn-primary btn-pay-now ms-5 rounded-5 px-4" data-snap-token="{{ order.token }}"
-                        data-order-id="{{ order.order_id }}">
-                        Bayar Sekarang
-                    </button>
-                    {% elif order.payment_status == 'gagal' %}
-
-                    {% else %}
-                    <!-- Button to trigger modal -->
-                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                        data-bs-target="#orderReceiptModal{{ order.transaction_id }}">
-                        Lihat Struk
-                    </button>
-
-                    <!-- Modal -->
-                    <div class="modal fade" id="orderReceiptModal{{ order.transaction_id }}" tabindex="-1"
-                        aria-labelledby="orderReceiptModalLabel" aria-hidden="true">
-                        <div class="modal-dialog modal-lg">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title" id="orderReceiptModalLabel">Struk Pesanan</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                        aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="container my-4">
-                                        <div class="container my-4">
-                                            <!-- Header -->
-                                            <div class="card mb-4">
-                                                <div class="card-body">
-                                                    <h5 class="card-title">Nota Pesanan</h5>
-                                                    <div class="row">
-                                                        <div class="col-md-6">
-                                                            <p class="mb-1"><strong>Nama Penjual:</strong> Langgeng
-                                                                Catering</p>
-                                                            <p class="mb-1"><strong>No. Pesanan:</strong>
-                                                                {{order.order_id}}
-                                                            </p>
-                                                            <p class="mb-1"><strong>Waktu Pembayaran:</strong> {{
-                                                                order.transaction_time }}
-                                                            </p>
-                                                            <p class="mb-1"><strong>Metode Pembayaran:</strong> {{
-                                                                order.payment_type }}</p>
-                                                            <p class="mb-1"><strong>Jasa Kirim:</strong> {% if
-                                                                order.delivery_option == 'pickup' %}
-                                                                Diambil di Toko
-                                                                {% elif order.delivery_option == 'delivery' %}
-                                                                Diantar Ke
-                                                                {{order.user.addresses[order.address_index].address_type}}
-                                                                {% else %}
-                                                                Pilihan Pengiriman Tidak Diketahui
-                                                                {% endif %}</p>
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            <p class="mb-1"><strong>Nama Pembeli:</strong>
-                                                                {{order.user.name}}</p>
-                                                            <p class="mb-1"><strong>No. Handphone:</strong>
-                                                                {{order.user.phone}}</p>
-                                                            <p class="mb-1"><strong>Alamat Pembeli:</strong></p>
-                                                            <p class="small">
-                                                                {{order.user.addresses[order.address_index].full_address}}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Rincian Pesanan -->
-                                            <div class="card mb-4">
-                                                <div class="card-body">
-                                                    <h5 class="card-title">Rincian Pesanan</h5>
-                                                    <div class="table-responsive">
-                                                        <table class="table">
-                                                            <thead>
-                                                                <tr>
-                                                                    <th>No.</th>
-                                                                    <th>Produk</th>
-                                                                    <th>Variasi</th>
-                                                                    <th>Harga Produk</th>
-                                                                    <th>Kuantitas</th>
-                                                                    <th>Subtotal</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-
-
-                                                                {% for item in order.items %}
-                                                                <tr>
-                                                                    <td>{{loop.index}}</td>
-                                                                    <td>{{ item.product.produkNama }}</td>
-                                                                    <td>{{ item.variant }}</td>
-                                                                    <td>{{ item.product.produkHarga | idr }}</td>
-                                                                    <td>{{ item.quantity }}</td>
-                                                                    <td>{{ (item.product.produkHarga * item.quantity) |
-                                                                        idr }}</td>
-                                                                </tr>
-
-                                                                {% endfor %}
-
-                                                                <tr>
-                                                                    <td colspan="5" class="text-end">
-                                                                        <strong>Total</strong>
-                                                                    </td>
-                                                                    <td><strong>
-                                                                            {{(order.grand_total - order.shipping_cost -
-                                                                            order.vat )| idr}}
-                                                                        </strong>
-                                                                    </td>
-                                                                </tr>
-                                                            </tbody>
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Rincian Pembayaran -->
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <h5 class="card-title">Rincian Pembayaran</h5>
-                                                    <div class="row">
-                                                        <div class="col-md-6 offset-md-6">
-                                                            <div class="d-flex justify-content-between mb-2">
-                                                                <span>Subtotal Pesanan</span>
-                                                                <span>{{(order.grand_total - order.shipping_cost -
-                                                                    order.vat )| idr}}</span>
-                                                            </div>
-                                                            <div class="d-flex justify-content-between mb-2">
-                                                                <span>Subtotal Pengiriman</span>
-                                                                <span>{{order.shipping_cost | idr}}</span>
-                                                            </div>
-                                                            <div class="d-flex justify-content-between mb-2">
-                                                                <span>PPN (11%) </span>
-                                                                <span>{{order.vat | idr}}</span>
-                                                            </div>
-                                                            <hr>
-                                                            <div class="d-flex justify-content-between fw-bold">
-                                                                <span>Total Pembayaran</span>
-                                                                <span>{{order.grand_total | idr}}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Footer -->
-                                            <div class="mt-4 text-center small">
-                                                <p>Langgeng Catering</p>
-                                                <p>Jl.DR . Setia Budi No 38 Kembang Baru RT 002/RW001<br> Kec. Brebes,
-                                                    Kabupaten Brebes,
-                                                    Jawa Tengah 52212
-                                                </p>
-                                            </div>
-                                        </div>
+                        <!-- Product List -->
+                        <div class="card-body">
+                            <div class="product-list">
+                                {% for item in order.items %}
+                                <div class="d-flex justify-content-start align-items-center mb-3">
+                                    <img src="{{ url_for('image.image', image_id=item.product.id) }}"
+                                        alt="{{ item.product.produkNama }}" class="img-fluid rounded me-3"
+                                        style="width: 100px; height: 100px;">
+                                    <div class="flex-grow-1">
+                                        <p class="mb-1"><strong>{{ item.product.produkNama }}</strong></p>
+                                        <p class="mb-1 text-muted">{{ item.quantity }} x {{ item.product.produkHarga |
+                                            idr }}</p>
+                                    </div>
+                                    <div class="text-end">
+                                        <p class="mb-1"><strong>Total: {{ (item.product.produkHarga * item.quantity) |
+                                                idr }}</strong></p>
                                     </div>
                                 </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary"
-                                        data-bs-dismiss="modal">Tutup</button>
-                                    <a href="{{ url_for('main.print_pdf', transaction_id=order.transaction_id) }}"
-                                        class="btn btn-primary" target="_blank">Print PDF</a>
-                                </div>
+                                {% endfor %}
                             </div>
                         </div>
+
+                        <!-- Order Footer and Modal Trigger -->
+                        <div class="card-footer bg-white border-0 d-flex justify-content-between align-items-center">
+                            <p class="mb-0">Total Harga: <strong>{{ order.grand_total | idr }}</strong></p>
+
+                            <!-- Payment Button or Receipt Modal Trigger -->
+                            {% if order.payment_status == 'menunggu' %}
+                            <button class="btn btn-primary btn-pay-now ms-5 rounded-5 px-4"
+                                data-snap-token="{{ order.token }}" data-order-id="{{ order.order_id }}">
+                                Bayar Sekarang
+                            </button>
+                            {% elif order.payment_status == 'gagal' %}
+                            <!-- No action -->
+                            {% else %}
+                            <!-- Button to trigger modal -->
+                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                                data-bs-target="#orderReceiptModal{{ order.transaction_id }}">
+                                Lihat Struk
+                            </button>
+                            {% endif %}
+                        </div>
                     </div>
-
-
-                    <!-- Modal Structure -->
-
-                    {% endif %}
                 </div>
             </div>
+            {% endfor %}
+            {% else %}
+            <div class="d-flex flex-column align-items-center justify-content-center text-center mt-5">
+                <i class='bx bx-data' style="font-size: 100px; color: #6c757d;"></i>
+                <p style="font-size: 18px; color: #6c757d; margin-top: 10px;">Anda belum memiliki pesanan.</p>
+            </div>
+
+            {% endif %}
         </div>
     </div>
-    {% endfor %}
-
-    {% else %}
-    <p>Anda belum memiliki pesanan.</p>
-    {% endif %}
-
 </div>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js"
     data-client-key="client_key"></script>
@@ -257,20 +146,16 @@ Riwayat Pemesanan
         $('.btn-pay-now').on('click', function (event) {
             event.preventDefault();
 
-            // Ambil snap_token dan order_id dari atribut tombol
             var snapToken = $(this).data('snap-token');
             var orderId = $(this).data('order-id');
 
             if (snapToken) {
-                // Tampilkan Snap popup menggunakan token yang diambil
                 snap.pay(snapToken, {
                     onSuccess: function (result) {
-
-                        window.location.href = "/order"; // Redirect ke riwayat pesanan
+                        window.location.href = "/order"; // Redirect to order history
                     },
                     onPending: function (result) {
-
-                        window.location.href = "/order"; // Redirect ke riwayat pesanan
+                        window.location.href = "/order"; // Redirect to order history
                     },
                     onError: function (result) {
                         alert('Pembayaran gagal!');

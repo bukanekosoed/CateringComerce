@@ -18,12 +18,13 @@
         </div>
         <div class="d-flex me-0">
 
-            <form class="d-flex w-auto my-2 my-lg-0" action="" method="get">
-                <input class="form-control me-2" type="search" name="q" placeholder="Search" aria-label="Search">
+            <form class="d-flex w-auto my-2 my-lg-0" action="{{ url_for('main.shop') }}" method="get">
+                <input class="form-control me-2" type="search" name="q" placeholder="Search Produk" aria-label="Search" value="{{ query if query }}">
                 <button class="btn btn-outline-primary" type="submit">
                     <i class='bx bx-search-alt'></i>
                 </button>
             </form>
+            
 
             <div class="d-flex ms-3 me-0">
 

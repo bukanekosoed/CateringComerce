@@ -11,7 +11,7 @@ Masuk Akun
                 <div class="card rounded-5 overflow-hidden">
                     <div class="row g-0">
                         <div class="col-md-6 col-lg-7 d-flex align-items-center">
-                       
+
                             <div class="card-body p-4 p-lg-5 text-black">
                                 <div class="d-flex align-items-center mb- pb-1 text-primary h1 fw-bold mb-0">
                                     Langgeng <span class="h1 fw-bold mb-0 text-secondary">Catering</span>
@@ -25,7 +25,7 @@ Masuk Akun
                                                 placeholder="Enter your email" name="email" required>
                                             <label for="inputEmail">Alamat Email</label>
                                         </div>
-                                        <div class="form-floating mb-3">
+                                        <div class="form-floating mb-2">
                                             <input type="password" class="form-control" id="inputPassword"
                                                 placeholder="Enter your password" name="password" required
                                                 autocomplete="current-password">
@@ -34,13 +34,19 @@ Masuk Akun
                                         <button type="submit"
                                             class="btn btn-primary login-btn d-block mx-auto w-100 mb-5 shadow p-3 rounded-5">
                                             Masuk</button>
-                                        <p class="mb-5 pb-lg-2">Belum Punya Akun? <a
+                                        <p class="mb-3 pb-lg-2">Belum Punya Akun? <a
                                                 href="{{ url_for('auth.register') }}"
                                                 class="text-decoration-none text-primary">Daftar Disini</a></p>
                                     </div>
                                 </form>
                                 <a href="{{ url_for('auth.google_login') }}">
-                                    <button>Login with Google</button>
+                                    <div class="d-flex justify-content-center">
+                                        <button
+                                            class="btn btn-white login-btn d-block mx-auto w-100 mb-5 shadow p-3 rounded-5 d-flex align-items-center justify-content-center">
+                                            <i class='bx bxl-google fs-4 me-2'></i> Login with Google
+                                        </button>
+                                    </div>
+
                                 </a>
                             </div>
                         </div>

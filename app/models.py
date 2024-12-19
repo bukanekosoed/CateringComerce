@@ -43,6 +43,14 @@ class Produk(Document):
     kategori = ReferenceField(Kategori, reverse_delete_rule=CASCADE)
     variantsNama = ListField(StringField())
     
+def search_products_by_name(query, page, limit):
+    offset = (page - 1) * limit
+    return Produk.objects(produkNama__icontains=query).skip(offset).limit(limit)
+
+def count_products_by_name(query):
+    return Produk.objects(produkNama__icontains=query).count()
+
+    
 class Users(Document):
     name = StringField(required=True, max_length=50)
     email = EmailField(required=True, unique=True)
@@ -120,6 +128,7 @@ class Orders(Document):
     payment_status = StringField(default="menunggu")
     expiry_time = DateTimeField()
     token = StringField()
+    order_status = StringField()
     address_index=IntField  (required=True)
 
     @classmethod
