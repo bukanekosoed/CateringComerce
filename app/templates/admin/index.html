@@ -74,7 +74,9 @@
                 class='bx {% if percentage_change >= 0 %} bxs-up-arrow text-success {% else %} bxs-down-arrow text-danger {% endif %}'></i>
               {{percentage_change}}% Bulan Lalu
             </div>
-            <button class="btn btn-primary mt-2">View More</button>
+            <a class="btn btn-primary mt-2" href="{{ url_for('admin.laporan') }}">
+              View More
+            </a>
           </div>
         </div>
       </div>

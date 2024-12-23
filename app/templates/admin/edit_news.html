@@ -1,0 +1,31 @@
+{% extends "admin/base.html" %}
+
+{% block title %}
+Edit Berita
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Edit Berita</h2>
+    <form method="POST" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label for="newsTitle" class="form-label">Judul Berita</label>
+            <input type="text" class="form-control" id="newsTitle" name="newsTitle" value="{{ news.title }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="newsDesc" class="form-label">Deskripsi</label>
+            <textarea class="form-control" id="newsDesc" name="newsDesc" rows="5" required>{{ news.description }}</textarea>
+        </div>
+        <div class="mb-3">
+            <label for="newsImg" class="form-label">Gambar (Opsional)</label>
+            <input type="file" class="form-control" id="newsImg" name="newsImg">
+            {% if news.image %}
+            <img src="{{ url_for('image.image', image_id=news.id) }}" alt="Gambar saat ini" class="img-thumbnail mt-3"
+                style="max-width: 200px;">
+            {% endif %}
+        </div>
+        <button type="submit" class="btn btn-primary">Simpan</button>
+        <a href="{{ url_for('admin.daftar_news') }}" class="btn btn-secondary">Batal</a>
+    </form>
+</div>
+{% endblock %}

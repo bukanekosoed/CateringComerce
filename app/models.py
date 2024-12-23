@@ -2,7 +2,7 @@ from mongoengine import (connect, Document, StringField,
                          ImageField, IntField, EmbeddedDocumentField,
                          EmbeddedDocument, ReferenceField,
                          CASCADE, ListField, EmailField,
-                         FloatField, DateTimeField
+                         FloatField, DateTimeField, BooleanField
                         )
 from dotenv import load_dotenv
 import os
@@ -19,6 +19,7 @@ connect(db=db_name, host=mongo_uri)
 gmt_plus_7 = pytz.timezone('Asia/Jakarta')
 def get_current_time():
     return datetime.now(gmt_plus_7)
+
 class Address(EmbeddedDocument):
     latitude = FloatField(required=True)
     longitude = FloatField(required=True)
@@ -81,7 +82,15 @@ class Users(Document):
 
             return cls.objects(created_at__gte=start_date, created_at__lt=end_date).count()
         return 0
-    
+
+class Notification(Document):
+    user = ReferenceField(Users, required=True)  # Referensi ke pengguna
+    order_id = StringField()
+    title = StringField(required=True)
+    message = StringField()
+    created_at = DateTimeField(default=datetime.utcnow)
+    is_read = BooleanField(default=False)  # Status apakah sudah dibaca
+
 class Admin(Document):
     name = StringField(required=True, max_length=50)
     email = EmailField(required=True, unique=True)
@@ -220,7 +229,11 @@ class Orders(Document):
         percentage_change = (change / previous_value) * 100
         return round(percentage_change, 2)
 
-
+class News(Document):
+    title = StringField(required=True, unique=True)
+    description = StringField(required=True)
+    image = ImageField()
+    created_at = DateTimeField(default=datetime.utcnow)
 
 
 def get_all_categories():

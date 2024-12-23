@@ -1,25 +1,26 @@
-from flask import Blueprint, render_template,request,redirect,flash,url_for,session,jsonify,make_response
+from flask import Blueprint, render_template,request,redirect,flash,url_for,session,jsonify,make_response,abort
 import requests
+import random
 from .models import (Kategori,Produk, get_products_by_category, 
                      get_all_categories, get_product_count_by_category, 
                      get_total_product_count,get_all_products,
                      Users, Cart,CartItem,Address,Orders, search_products_by_name,
-                     count_products_by_name
+                     count_products_by_name,Notification,News
                     )
 from .decorators import login_required, user_required
 from math import ceil
-from mongoengine import DoesNotExist
-from flask_login import current_user
 import midtransclient
 from dotenv import load_dotenv
 import os
+from bson import ObjectId
+from mongoengine import DoesNotExist
 from datetime import datetime, timedelta
 import pytz
 from babel.dates import format_datetime
 from midtransclient import Snap
 from openlocationcode import openlocationcode as olc
 import pdfkit
-from pdfkit.configuration import Configuration
+
 
 load_dotenv()
 STORE_LATITUDE = os.getenv('STORE_LATITUDE')
@@ -52,6 +53,23 @@ def inject_cart_count():
     return {
         'cart_count': cart_count,
         'cart_items': cart_items  # Mengembalikan item cart
+    }
+@user_bp.context_processor
+def inject_notifications():
+    unread_notifications_count = 0
+    unread_notifications = []  # Daftar untuk menyimpan notifikasi yang belum dibaca
+    user_id = session.get('user_id')  # Mengambil user_id dari session
+    
+    if user_id:
+        user = Users.objects(id=user_id).first()
+        if user:
+            notifications = Notification.objects(user=user, is_read=False).order_by('-created_at')
+            unread_notifications_count = notifications.count()
+            unread_notifications = notifications  # Ambil semua notifikasi yang belum dibaca
+    
+    return {
+        'unread_count': unread_notifications_count,
+        'notifications': unread_notifications  # Mengembalikan notifikasi yang belum dibaca
     }
 
 
@@ -248,16 +266,37 @@ def update_delivery_option():
         'grand_total': grand_total,
     })
 
-@user_bp.route('/profile')
+@user_bp.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
-    return render_template('user/index.html')
+    user_id = session.get('user_id')
+    user = Users.objects(id=user_id).first()
+    if request.method == 'POST':
+        # Ambil data yang dikirim melalui form
+        name = request.form.get('name')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+
+        # Perbarui data pengguna
+        if name:
+            user.name = name
+        if email:
+            user.email = email
+        if phone:
+            user.phone = phone
+
+        # Simpan perubahan ke database
+        user.save()
+
+        # Redirect setelah berhasil memperbarui
+        return redirect(url_for('main.profile'))
+    
+    return render_template('user/profile.html',user=user)
 
 @user_bp.route('/cart/delete/<product_id>', methods=['POST'])
 @login_required
 def cart_delete(product_id):
     user_id = session.get('user_id')
-    print(f"User ID from session: {user_id}")  # Debugging
 
     user = Users.objects(id=user_id).first()
     user_cart = Cart.objects(user=user).first()
@@ -340,6 +379,8 @@ def update_quantity(product_id):
 @login_required
 def save_address():
     user_id = session.get('user_id')
+    next_url = request.args.get('next_url', url_for('main.cart'))  # Default redirect jika next_url tidak ada
+    
     address_type = request.form.get('address_type')
     street_name = request.form.get('street_name')
     rt_rw = request.form.get('rt_rw')
@@ -355,12 +396,12 @@ def save_address():
         longitude = float(longitude)
     except ValueError:
         flash('Invalid latitude or longitude value.', 'danger')
-        return redirect(url_for('main.cart'))
+        return redirect(next_url)
 
     # Check if all fields are filled
     if not (address_type and street_name and rt_rw and village and sub_district and district and latitude and longitude):
         flash('Semua kolom harus diisi.', 'danger')
-        return redirect(url_for('main.cart'))
+        return redirect(next_url)
 
     # Create full address string
     full_address = f"{street_name}, RT {rt_rw}, {village}, {sub_district}, {district}"
@@ -390,10 +431,91 @@ def save_address():
     else:
         flash('Pengguna tidak ditemukan.', 'danger')
 
-    return redirect(url_for('main.cart'))
+    return redirect(next_url)
 
 
+@user_bp.route('/delete_address/<int:address_index>', methods=['POST'])
+@login_required
+def delete_address(address_index):
+    user_id = session.get('user_id')
+    next_url = request.args.get('next_url', url_for('main.cart'))  # Default redirect jika next_url tidak ada
 
+    # Ambil pengguna dari database
+    user = Users.objects(id=user_id).first()
+    if not user:
+        flash('Pengguna tidak ditemukan.', 'danger')
+        return redirect(next_url)
+
+    # Periksa apakah indeks alamat valid
+    if address_index < 0 or address_index >= len(user.addresses):
+        flash('Alamat tidak ditemukan.', 'danger')
+        return redirect(next_url)
+
+    address_type = user.addresses[address_index].address_type
+    # Hapus alamat berdasarkan indeks
+    del user.addresses[address_index]
+    user.save()
+    flash(f'Alamat "{address_type}" berhasil dihapus.', 'primary')
+    return redirect(next_url)
+
+@user_bp.route('/update_address', methods=['POST'])
+@login_required
+def update_address():
+    user_id = session.get('user_id')
+    next_url = request.args.get('next_url', url_for('main.cart'))  # Default redirect jika next_url tidak ada
+    
+    address_id = request.form.get('address_id')
+    address_type = request.form.get('address_type')
+    street_name = request.form.get('street_name')
+    rt_rw = request.form.get('rt_rw')
+    village = request.form.get('village')
+    sub_district = request.form.get('sub_district')
+    district = request.form.get('district')
+    latitude = request.form.get('latitude')
+    longitude = request.form.get('longitude')
+
+    # Validate latitude and longitude
+    try:
+        latitude = float(latitude)
+        longitude = float(longitude)
+    except ValueError:
+        flash('Invalid latitude or longitude value.', 'danger')
+        return redirect(next_url)
+
+    # Check if all fields are filled
+    if not (address_type and street_name and rt_rw and village and sub_district and district and latitude and longitude):
+        flash('Semua kolom harus diisi.', 'danger')
+        return redirect(next_url)
+
+    # Find the address to be updated
+    user = Users.objects(id=user_id).first()
+    if user:
+        address = next((addr for addr in user.addresses if str(addr.id) == address_id), None)
+        if address:
+            # Update address information
+            address.address_type = address_type
+            address.street_name = street_name
+            address.rt_rw = rt_rw
+            address.village = village
+            address.sub_district = sub_district
+            address.district = district
+            address.latitude = latitude
+            address.longitude = longitude
+            address.full_address = f"{street_name}, RT {rt_rw}, {village}, {sub_district}, {district}"
+            address.plus_code = olc.encode(latitude, longitude)
+
+            # Save the updated user data
+            user.save()
+            flash('Alamat berhasil diperbarui.', 'success')
+        else:
+            flash('Alamat tidak ditemukan.', 'danger')
+    else:
+        flash('Pengguna tidak ditemukan.', 'danger')
+
+    return redirect(next_url)
+
+
+    return render_template('edit_address.html', address=address)
 def to_roman(n):
     if n == 0:
         return "0"  # Menampilkan "0" untuk angka 0
@@ -668,7 +790,7 @@ def midtrans_webhook():
     order_id = webhook_data.get('order_id')
     transaction_status = webhook_data.get('transaction_status')
     payment_type = webhook_data.get('payment_type')
-    transaction_id = webhook_data.get('transaction_id')  # Ambil transaction_id
+    transaction_id = webhook_data.get('transaction_id')
     fraud_status = webhook_data.get('fraud_status')
     settlement_time = webhook_data.get('settlement_time')
     
@@ -681,30 +803,41 @@ def midtrans_webhook():
             return jsonify({"error": "Order not found"}), 404
 
         # Perbarui status pembayaran berdasarkan transaction_status dari Midtrans
+        notification_title = "Status Pembayaran"
+        notification_message = ""  # Menambahkan Order ID ke notifikasi
+
         if transaction_status == 'capture':
             if payment_type == 'credit_card':
                 if fraud_status == 'challenge':
                     order.payment_status = 'challenge'
+                    notification_message = "Pembayaran dalam status challenge"
                 else:
                     order.payment_status = 'paid'
-                    order.order_status = 'sedang diproses'  # Set status pesanan menjadi 'sedang diproses'
+                    order.order_status = 'sedang_diproses'
+                    notification_message = "Pembayaran berhasil, pesanan sedang diproses"
             else:
                 order.payment_status = 'paid'
-                order.order_status = 'sedang diproses'  # Set status pesanan menjadi 'sedang diproses'
+                order.order_status = 'sedang_diproses'
+                notification_message = "Pembayaran berhasil, pesanan sedang diproses"
         elif transaction_status == 'settlement':
             order.payment_status = 'berhasil'
-            order.order_status = 'sedang diproses'  # Set status pesanan menjadi 'sedang diproses'
+            order.order_status = 'sedang_diproses'
+            notification_message = "Pembayaran berhasil, pesanan sedang diproses"
         elif transaction_status == 'pending':
             order.payment_status = 'menunggu'
+            notification_message = "Sedang menunggu pembayaran"
         elif transaction_status == 'deny':
             order.payment_status = 'gagal'
             order.order_status = 'dibatalkan'
+            notification_message = "Pembayaran gagal, pesanan dibatalkan"
         elif transaction_status == 'expire':
             order.payment_status = 'gagal'
             order.order_status = 'dibatalkan'
+            notification_message = "Pembayaran kadaluarsa, pesanan dibatalkan"
         elif transaction_status == 'cancel':
             order.payment_status = 'dibatalkan'
             order.order_status = 'dibatalkan'
+            notification_message = "Pembayaran dibatalkan, pesanan dibatalkan"
 
         # Jika settlement_time ada, update waktu settlement di database
         if settlement_time:
@@ -723,10 +856,24 @@ def midtrans_webhook():
         # Simpan perubahan ke database
         order.save()
 
+        # Menambah notifikasi untuk pengguna
+        if order.user:
+            user = Users.objects(id=order.user.id).first()
+            if user:
+                # Membuat entri notifikasi baru dengan Order ID di dalamnya
+                notification = Notification(
+                    user=user,
+                    order_id=str(order.order_id),  # Menyimpan order_id sebagai string
+                    title=notification_title,
+                    message=notification_message,
+                    created_at=datetime.utcnow(),
+                    is_read=False
+                )
+                notification.save()
+
         return jsonify({"message": "Webhook received and processed"}), 200
     else:
         return jsonify({"error": "Order ID not found in webhook data"}), 400
-
 
 
 @user_bp.route('/print-pdf/<transaction_id>')
@@ -787,3 +934,35 @@ def print_pdf(transaction_id):
         return f"IOError: {str(e)}", 500
     except Exception as e:
         return f"An error occurred: {str(e)}", 500
+    
+@user_bp.route('/news')
+def berita():
+    news_list = News.objects().order_by('-created_at')
+    return render_template('user/berita.html', news_list=news_list)
+
+@user_bp.route('/news/<news_id>')
+def detail(news_id):
+    # Validasi jika `news_id` adalah ObjectId yang valid
+    if not ObjectId.is_valid(news_id):
+        return abort(404)  # Tampilkan halaman 404 jika ID tidak valid
+
+    try:
+        # Ambil berita utama berdasarkan ID
+        news = News.objects.get(id=news_id)
+    except DoesNotExist:
+        # Jika berita tidak ditemukan
+        return abort(404)
+
+    # Ambil semua berita lain, kecuali berita yang sedang dilihat
+    all_other_news = News.objects(id__ne=news_id)
+
+    # Pilih 5 berita secara acak jika tersedia lebih dari 5
+    other_news_list = list(all_other_news)
+    if len(other_news_list) > 5:
+        other_news_list = random.sample(other_news_list, 5)
+
+    # Render template dengan data berita dan berita lainnya
+    return render_template(
+        'user/detail_berita.html', 
+        news=news, 
+        other_news_list=other_news_list)

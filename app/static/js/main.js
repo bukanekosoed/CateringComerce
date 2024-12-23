@@ -237,10 +237,24 @@ if ($('input[name="delivery_option"]:checked').val() === "delivery") {
 
 // profile dropdown
 $(document).ready(function () {
+  function startProgressBarAndRemoveAlert(alertElement) {
+    var progressBar = alertElement.find('.progress-bar');
+    progressBar.css('width', '100%');
+
+    setTimeout(function () {
+      alertElement.alert('close');
+    }, 2000);
+  }
+
+
+  $('.alert').each(function () {
+    startProgressBarAndRemoveAlert($(this));
+  });
+  
   $('#profileDropdown').hover(
     function () {
       $('.profileDropdown').stop(true, true).fadeIn(200); // Tampilkan dropdown saat hover
-      adjustDropdownPosition(); // Sesuaikan posisi dropdown
+      adjustDropdownPosition(); // Sesuaikan posisi dropdown jika diperlukan
     },
     function () {
       $('.profileDropdown').stop(true, true).fadeOut(200); // Sembunyikan dropdown saat tidak hover
@@ -263,7 +277,7 @@ $(document).ready(function () {
 
     // Jika dropdown melebihi batas bawah viewport
     if (offset.top + dropdown.outerHeight() > windowHeight) {
-      dropdown.css({ top: 'auto', bottom: '100%', left: '-100px' }); // Tampilkan di atas
+      dropdown.css({ top: '100%', bottom: 'auto%', left: '-100px' }); // Tampilkan di atas
     } else {
       dropdown.css({ top: '100%', bottom: 'auto', left: '-100px' }); // Tampilkan di bawah
     }
@@ -271,204 +285,204 @@ $(document).ready(function () {
 
   const map = L.map('map').setView([-6.876916, 109.047849], 10);
 
-        // Load the HD tile layer from Thunderforest
-        L.tileLayer('https://tile.thunderforest.com/atlas/{z}/{x}/{y}@2x.png?apikey=6aa02e5af5274e7abd8736a2f111edde', {
-            maxZoom: 20,
-            attribution: '&copy; <a href="https://tile.thunderforest.com/">Thunderforest</a>',
-            tileSize: 512,
-            zoomOffset: -1,
-        }).addTo(map);
+  // Load the HD tile layer from Thunderforest
+  L.tileLayer('https://tile.thunderforest.com/atlas/{z}/{x}/{y}@2x.png?apikey=6aa02e5af5274e7abd8736a2f111edde', {
+    maxZoom: 20,
+    attribution: '&copy; <a href="https://tile.thunderforest.com/">Thunderforest</a>',
+    tileSize: 512,
+    zoomOffset: -1,
+  }).addTo(map);
 
-        let marker;
+  let marker;
 
-        function getLocation() {
-            if (navigator.geolocation) {
-                navigator.permissions.query({ name: 'geolocation' }).then(function (permissionStatus) {
-                    if (permissionStatus.state === 'granted' || permissionStatus.state === 'prompt') {
-                        navigator.geolocation.getCurrentPosition(showPosition, showError);
-                    } else {
-                        alert('Geolocation access has been denied. Please allow location access in your browser settings.');
-                    }
-
-                    permissionStatus.onchange = function () {
-                        if (this.state === 'granted') {
-                            navigator.geolocation.getCurrentPosition(showPosition, showError);
-                        } else if (this.state === 'denied') {
-                            alert('Geolocation access has been denied. Please allow location access in your browser settings.');
-                        }
-                    };
-                });
-            } else {
-                alert('Geolocation is not supported by this browser.');
-            }
+  function getLocation() {
+    if (navigator.geolocation) {
+      navigator.permissions.query({ name: 'geolocation' }).then(function (permissionStatus) {
+        if (permissionStatus.state === 'granted' || permissionStatus.state === 'prompt') {
+          navigator.geolocation.getCurrentPosition(showPosition, showError);
+        } else {
+          alert('Geolocation access has been denied. Please allow location access in your browser settings.');
         }
 
-        function showPosition(position) {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
+        permissionStatus.onchange = function () {
+          if (this.state === 'granted') {
+            navigator.geolocation.getCurrentPosition(showPosition, showError);
+          } else if (this.state === 'denied') {
+            alert('Geolocation access has been denied. Please allow location access in your browser settings.');
+          }
+        };
+      });
+    } else {
+      alert('Geolocation is not supported by this browser.');
+    }
+  }
 
-            map.setView([lat, lng], 17);
+  function showPosition(position) {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
 
-            if (marker) {
-                marker.setLatLng([lat, lng]).update();
-            } else {
-                marker = L.marker([lat, lng], { draggable: true }).addTo(map)
-                    .bindPopup('Lokasi Anda Sekarang')
-                    .openPopup();
-            }
+    map.setView([lat, lng], 17);
 
-            updateCoordinates(lat, lng);
+    if (marker) {
+      marker.setLatLng([lat, lng]).update();
+    } else {
+      marker = L.marker([lat, lng], { draggable: true }).addTo(map)
+        .bindPopup('Lokasi Anda Sekarang')
+        .openPopup();
+    }
 
-            marker.on('dragend', function (e) {
-                const { lat, lng } = e.target.getLatLng();
-                updateCoordinates(lat, lng);
-            });
+    updateCoordinates(lat, lng);
+
+    marker.on('dragend', function (e) {
+      const { lat, lng } = e.target.getLatLng();
+      updateCoordinates(lat, lng);
+    });
+  }
+
+  function showError(error) {
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        alert('User denied the request for Geolocation.');
+        break;
+      case error.POSITION_UNAVAILABLE:
+        alert('Location information is unavailable.');
+        break;
+      case error.TIMEOUT:
+        alert('The request to get user location timed out.');
+        break;
+      case error.UNKNOWN_ERROR:
+        alert('An unknown error occurred.');
+        break;
+    }
+  }
+
+  function updateCoordinates(lat, lng) {
+    document.getElementById('latitude').value = lat;
+    document.getElementById('longitude').value = lng;
+
+    // Check distance from default location
+    checkDistance(lat, lng);
+
+    // Update city (kota) field based on coordinates
+    updateAddressFields(lat, lng);
+  }
+
+  function updateAddressFields(lat, lng) {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`;
+
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        const address = data.address;
+        if (address) {
+          document.getElementById('district').value = address.city || address.county || '';
+          document.getElementById('sub_district').value = address.city || address.county || '';
         }
+      })
+      .catch(error => console.error('Error:', error));
+  }
 
-        function showError(error) {
-            switch (error.code) {
-                case error.PERMISSION_DENIED:
-                    alert('User denied the request for Geolocation.');
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    alert('Location information is unavailable.');
-                    break;
-                case error.TIMEOUT:
-                    alert('The request to get user location timed out.');
-                    break;
-                case error.UNKNOWN_ERROR:
-                    alert('An unknown error occurred.');
-                    break;
-            }
+  function checkDistance(lat, lng) {
+    const defaultLat = -6.876916;
+    const defaultLng = 109.047849;
+    const url = `https://router.project-osrm.org/route/v1/driving/${defaultLng},${defaultLat};${lng},${lat}?overview=false`;
+
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        const distance = data.routes[0].distance; // Distance in meters
+        const distanceInKm = distance / 1000;
+
+        const saveButton = document.getElementById('saveAddressButton');
+
+        if (distanceInKm > 70) {
+          saveButton.disabled = true;
+          saveButton.classList.add('btn-secondary'); // Optional: Change button style to indicate it's disabled
+          alert('Jarak dari lokasi toko lebih dari 70 km. Alamat tidak dapat disimpan.');
+        } else {
+          saveButton.disabled = false;
+          saveButton.classList.remove('btn-secondary'); // Optional: Restore original button style
         }
+      })
+      .catch(error => console.error('Error:', error));
+  }
 
-        function updateCoordinates(lat, lng) {
-            document.getElementById('latitude').value = lat;
-            document.getElementById('longitude').value = lng;
+  map.on('click', function (e) {
+    const { lat, lng } = e.latlng;
 
-            // Check distance from default location
-            checkDistance(lat, lng);
+    if (marker) {
+      marker.setLatLng([lat, lng]).update();
+    } else {
+      marker = L.marker([lat, lng], { draggable: true }).addTo(map)
+        .bindPopup('Lokasi Anda Sekarang')
+        .openPopup();
 
-            // Update city (kota) field based on coordinates
-            updateAddressFields(lat, lng);
-        }
+      marker.on('dragend', function (e) {
+        const { lat, lng } = e.target.getLatLng();
+        updateCoordinates(lat, lng);
+      });
+    }
 
-        function updateAddressFields(lat, lng) {
-            const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`;
+    updateCoordinates(lat, lng);
+  });
 
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    const address = data.address;
-                    if (address) {
-                        document.getElementById('district').value = address.city || address.county || '';
-                        document.getElementById('sub_district').value = address.city || address.county || '';
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-        }
+  document.getElementById('addAddressModal').addEventListener('shown.bs.modal', function () {
+    map.invalidateSize();
+    getLocation();
+  });
 
-        function checkDistance(lat, lng) {
-            const defaultLat = -6.876916;
-            const defaultLng = 109.047849;
-            const url = `https://router.project-osrm.org/route/v1/driving/${defaultLng},${defaultLat};${lng},${lat}?overview=false`;
+  // Mendapatkan tanggal saat ini
+  const today = new Date();
+  today.setDate(today.getDate() + 3);
+  const dd = String(today.getDate()).padStart(2, '0');
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const yyyy = today.getFullYear();
+  const minDate = `${yyyy}-${mm}-${dd}`;
 
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    const distance = data.routes[0].distance; // Distance in meters
-                    const distanceInKm = distance / 1000;
+  // Set atribut min pada input date
+  const deliveryDateInput = document.getElementById('delivery-date');
+  const deliveryTimeInput = document.getElementById('delivery-time');
 
-                    const saveButton = document.getElementById('saveAddressButton');
+  // Disable input waktu di awal
+  deliveryTimeInput.disabled = true;
 
-                    if (distanceInKm > 70) {
-                        saveButton.disabled = true;
-                        saveButton.classList.add('btn-secondary'); // Optional: Change button style to indicate it's disabled
-                        alert('Jarak dari lokasi toko lebih dari 70 km. Alamat tidak dapat disimpan.');
-                    } else {
-                        saveButton.disabled = false;
-                        saveButton.classList.remove('btn-secondary'); // Optional: Restore original button style
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-        }
+  deliveryDateInput.setAttribute('min', minDate);
 
-        map.on('click', function (e) {
-            const { lat, lng } = e.latlng;
+  // Validasi input tanggal saat field kehilangan fokus (blur)
+  function validateDate() {
+    const selectedDate = new Date(deliveryDateInput.value);
+    const currentDate = new Date();
+    currentDate.setDate(currentDate.getDate() + 3); // 3 hari ke depan
 
-            if (marker) {
-                marker.setLatLng([lat, lng]).update();
-            } else {
-                marker = L.marker([lat, lng], { draggable: true }).addTo(map)
-                    .bindPopup('Lokasi Anda Sekarang')
-                    .openPopup();
+    // Validasi setelah tanggal dipilih
+    if (deliveryDateInput.value) {
+      if (selectedDate < currentDate) {
+        alert("Tanggal pengiriman harus lebih dari atau sama dengan 3 hari dari hari ini.");
+        deliveryDateInput.value = ''; // Reset input tanggal
+        deliveryTimeInput.disabled = true; // Disable kembali waktu jika tanggal tidak valid
+      } else {
+        // Enable input waktu jika tanggal valid
+        deliveryTimeInput.disabled = false;
+      }
+    }
+  }
 
-                marker.on('dragend', function (e) {
-                    const { lat, lng } = e.target.getLatLng();
-                    updateCoordinates(lat, lng);
-                });
-            }
+  // Validasi input waktu saat field kehilangan fokus (blur)
+  function validateTime() {
+    const timeValue = deliveryTimeInput.value;
 
-            updateCoordinates(lat, lng);
-        });
+    if (timeValue) {
+      const [hours, minutes] = timeValue.split(':').map(Number);
+      if ((hours < 6 || hours > 19)) {
+        alert("Waktu Pengiriman Hanya Pada 06:00 Sampai 19:00");
+        deliveryTimeInput.value = ''; // Reset input waktu
+      }
+    }
+  }
 
-        document.getElementById('addAddressModal').addEventListener('shown.bs.modal', function () {
-            map.invalidateSize();
-            getLocation();
-        });
-
-        // Mendapatkan tanggal saat ini
-        const today = new Date();
-        today.setDate(today.getDate() + 3);
-        const dd = String(today.getDate()).padStart(2, '0');
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const yyyy = today.getFullYear();
-        const minDate = `${yyyy}-${mm}-${dd}`;
-
-        // Set atribut min pada input date
-        const deliveryDateInput = document.getElementById('delivery-date');
-        const deliveryTimeInput = document.getElementById('delivery-time');
-
-        // Disable input waktu di awal
-        deliveryTimeInput.disabled = true;
-
-        deliveryDateInput.setAttribute('min', minDate);
-
-        // Validasi input tanggal saat field kehilangan fokus (blur)
-        function validateDate() {
-            const selectedDate = new Date(deliveryDateInput.value);
-            const currentDate = new Date();
-            currentDate.setDate(currentDate.getDate() + 3); // 3 hari ke depan
-
-            // Validasi setelah tanggal dipilih
-            if (deliveryDateInput.value) {
-                if (selectedDate < currentDate) {
-                    alert("Tanggal pengiriman harus lebih dari atau sama dengan 3 hari dari hari ini.");
-                    deliveryDateInput.value = ''; // Reset input tanggal
-                    deliveryTimeInput.disabled = true; // Disable kembali waktu jika tanggal tidak valid
-                } else {
-                    // Enable input waktu jika tanggal valid
-                    deliveryTimeInput.disabled = false;
-                }
-            }
-        }
-
-        // Validasi input waktu saat field kehilangan fokus (blur)
-        function validateTime() {
-            const timeValue = deliveryTimeInput.value;
-
-            if (timeValue) {
-                const [hours, minutes] = timeValue.split(':').map(Number);
-                if ((hours < 6 || hours > 19)) {
-                    alert("Waktu Pengiriman Hanya Pada 06:00 Sampai 19:00");
-                    deliveryTimeInput.value = ''; // Reset input waktu
-                }
-            }
-        }
-
-        // Event listeners untuk validasi saat input kehilangan fokus (blur)
-        deliveryDateInput.addEventListener('blur', validateDate);
-        deliveryTimeInput.addEventListener('blur', validateTime);
+  // Event listeners untuk validasi saat input kehilangan fokus (blur)
+  deliveryDateInput.addEventListener('blur', validateDate);
+  deliveryTimeInput.addEventListener('blur', validateTime);
 
 
 });
@@ -501,7 +515,7 @@ $(document).ready(function () {
 
     // If the dropdown exceeds the viewport's bottom edge
     if (offset.top + dropdown.outerHeight() > windowHeight) {
-      dropdown.css({ top: 'auto', bottom: '100%', left: '-180px' }); // Display above
+      dropdown.css({ top: '100%', bottom: 'auto', left: '-180px' }); // Display above
     } else {
       dropdown.css({ top: '100%', bottom: 'auto', left: '-180px' }); // Display below
     }
@@ -525,5 +539,153 @@ $(document).ready(function () {
     checkDateTimeFilled();
   });
 
+
+  const map = L.map('map').setView([-6.876916, 109.047849], 10);
+
+  // Load the HD tile layer from Thunderforest
+  L.tileLayer('https://tile.thunderforest.com/atlas/{z}/{x}/{y}@2x.png?apikey=6aa02e5af5274e7abd8736a2f111edde', {
+    maxZoom: 20,
+    attribution: '&copy; <a href="https://tile.thunderforest.com/">Thunderforest</a>',
+    tileSize: 512,
+    zoomOffset: -1,
+  }).addTo(map);
+
+  let marker;
+
+  function getLocation() {
+    if (navigator.geolocation) {
+      navigator.permissions.query({ name: 'geolocation' }).then(function (permissionStatus) {
+        if (permissionStatus.state === 'granted' || permissionStatus.state === 'prompt') {
+          navigator.geolocation.getCurrentPosition(showPosition, showError);
+        } else {
+          alert('Geolocation access has been denied. Please allow location access in your browser settings.');
+        }
+
+        permissionStatus.onchange = function () {
+          if (this.state === 'granted') {
+            navigator.geolocation.getCurrentPosition(showPosition, showError);
+          } else if (this.state === 'denied') {
+            alert('Geolocation access has been denied. Please allow location access in your browser settings.');
+          }
+        };
+      });
+    } else {
+      alert('Geolocation is not supported by this browser.');
+    }
+  }
+
+  function showPosition(position) {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+
+    map.setView([lat, lng], 17);
+
+    if (marker) {
+      marker.setLatLng([lat, lng]).update();
+    } else {
+      marker = L.marker([lat, lng], { draggable: true }).addTo(map)
+        .bindPopup('Lokasi Anda Sekarang')
+        .openPopup();
+    }
+
+    updateCoordinates(lat, lng);
+
+    marker.on('dragend', function (e) {
+      const { lat, lng } = e.target.getLatLng();
+      updateCoordinates(lat, lng);
+    });
+  }
+
+  function showError(error) {
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        alert('User denied the request for Geolocation.');
+        break;
+      case error.POSITION_UNAVAILABLE:
+        alert('Location information is unavailable.');
+        break;
+      case error.TIMEOUT:
+        alert('The request to get user location timed out.');
+        break;
+      case error.UNKNOWN_ERROR:
+        alert('An unknown error occurred.');
+        break;
+    }
+  }
+
+  function updateCoordinates(lat, lng) {
+    document.getElementById('latitude').value = lat;
+    document.getElementById('longitude').value = lng;
+
+    // Check distance from default location
+    checkDistance(lat, lng);
+
+    // Update city (kota) field based on coordinates
+    updateAddressFields(lat, lng);
+  }
+
+  function updateAddressFields(lat, lng) {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`;
+
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        const address = data.address;
+        if (address) {
+          document.getElementById('district').value = address.city || address.county || '';
+
+        }
+      })
+      .catch(error => console.error('Error:', error));
+  }
+
+  function checkDistance(lat, lng) {
+    const defaultLat = -6.876916;
+    const defaultLng = 109.047849;
+    const url = `https://router.project-osrm.org/route/v1/driving/${defaultLng},${defaultLat};${lng},${lat}?overview=false`;
+
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        const distance = data.routes[0].distance; // Distance in meters
+        const distanceInKm = distance / 1000;
+
+        const saveButton = document.getElementById('saveAddressButton');
+
+        if (distanceInKm > 40) {
+          saveButton.disabled = true;
+          saveButton.classList.add('btn-secondary'); // Optional: Change button style to indicate it's disabled
+          alert('Jarak dari lokasi toko lebih dari 70 km. Alamat tidak dapat disimpan.');
+        } else {
+          saveButton.disabled = false;
+          saveButton.classList.remove('btn-secondary'); // Optional: Restore original button style
+        }
+      })
+      .catch(error => console.error('Error:', error));
+  }
+
+  map.on('click', function (e) {
+    const { lat, lng } = e.latlng;
+
+    if (marker) {
+      marker.setLatLng([lat, lng]).update();
+    } else {
+      marker = L.marker([lat, lng], { draggable: true }).addTo(map)
+        .bindPopup('Lokasi Anda Sekarang')
+        .openPopup();
+
+      marker.on('dragend', function (e) {
+        const { lat, lng } = e.target.getLatLng();
+        updateCoordinates(lat, lng);
+      });
+    }
+
+    updateCoordinates(lat, lng);
+  });
+
+  document.getElementById('addAddressModal').addEventListener('shown.bs.modal', function () {
+    map.invalidateSize();
+    getLocation();
+  });
 });
 

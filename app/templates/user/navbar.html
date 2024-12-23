@@ -1,35 +1,33 @@
-<!-- templates/navbar.html -->
-<!-- Navbar start -->
-
 <nav class="navbar navbar-light bg-white navbar-expand-xl shadow rounded-bottom-5 p-2 sticky-top">
     <div class="container">
-        <a href="index.html" class="navbar-brand d-none d-md-flex">
+        <a href="{{'main.index'}}" class="navbar-brand d-none d-md-flex">
             <h1 class="text-primary fs-3 fw-bold">LanggengCatering</h1>
         </a>
-
+        
 
         <div class="navbar-nav mx-auto d-none d-lg-flex">
             <a href="{{ url_for('main.index') }}"
-                class="nav-item nav-link {% if request.endpoint == 'main.index' %} active {% endif %}">Home</a>
+                class="nav-item nav-link {% if request.endpoint == 'main.index' %} active {% endif %}">Beranda</a>
             <a href="{{ url_for('main.shop') }}"
-                class="nav-item nav-link {% if request.endpoint == 'main.shop' %} active {% endif %}">Shop</a>
-            <a href="" class="nav-item nav-link">Galeri</a>
+                class="nav-item nav-link {% if request.endpoint == 'main.shop' %} active {% endif %}">Produk</a>
+            <a href="{{ url_for('main.berita') }}" class="nav-item nav-link {% if request.endpoint in ['main.berita', 'main.detail'] %} active {% endif %}">Berita</a>
 
         </div>
+        
         <div class="d-flex me-0">
 
             <form class="d-flex w-auto my-2 my-lg-0" action="{{ url_for('main.shop') }}" method="get">
-                <input class="form-control me-2" type="search" name="q" placeholder="Search Produk" aria-label="Search" value="{{ query if query }}">
+                <input class="form-control me-2" type="search" name="q" placeholder="Cari Produk" aria-label="Search"
+                    value="{{ query if query }}">
                 <button class="btn btn-outline-primary" type="submit">
                     <i class='bx bx-search-alt'></i>
                 </button>
             </form>
-            
+
 
             <div class="d-flex ms-3 me-0">
-
+                <!-- session user -->
                 {% if session.get('user_id') %}
-                <!-- Display when logged in -->
                 <div class="dropdown my-auto">
                     <a href="{{ url_for('main.cart') }}" class="position-relative me-4" id="cartDropdown">
                         <i class='bx bx-cart-alt fs-2'></i>
@@ -46,7 +44,6 @@
                             <li class="px-3 py-2 d-flex align-items-center">
                                 <h5 class="mb-0">Keranjang Saya ( {{ cart_items | length }} )</h5>
                                 <a href="{{url_for('main.cart')}}" class="ms-auto text-primary">Lihat</a>
-                                <!-- Right aligned "Lihat" -->
                             </li>
 
                             {% if cart_items %}
@@ -79,16 +76,60 @@
                     </a>
                 </div>
                 <div class="dropdown my-auto">
-
-                    <a class="position-relative me-4">
+                    <a class="position-relative me-4" id="notification-bell" data-bs-toggle="dropdown"
+                        aria-expanded="false">
                         <i class='bx bx-bell fs-2'></i>
-                        <span
+                        <span id="notification-counter"
                             class="position-absolute bg-secondary rounded-circle d-flex align-items-center justify-content-center text-dark px-1"
                             style="top: -18px; left: 20px; height: 20px; min-width: 20px;">
-
+                            {{ unread_count }}
                         </span>
                     </a>
+
+
+                    <div class="dropdown-menu dropdown-menu-end" id="notification-list">
+                        {% if notifications %}
+                        {% for notification in notifications[:4] %}
+                        <div class="dropdown-item d-flex align-items-center" href="{{ notification.mark_as_read }}">
+                            <!-- Ikon Notifikasi -->
+                            <i class="bx bx-bell fs-4 me-2" style="color: #4CAF50;"></i>
+                            <!-- Judul dan Pesan -->
+                            <div>
+                                <strong class="small">{{ notification.title }}</strong>
+                                <span class="small text-muted">{{ notification.created_at | gmt7}}</span>
+                                <p class="small text-muted" style="margin: 0; padding: 0;">{{ notification.message }}
+                                </p>
+                                <p class="small text-muted" style="margin: 0; padding: 0;">{{ notification.order_id }}
+                                </p>
+
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        <div class="dropdown-divider"></div>
+
+                        <div class="d-flex justify-content-between">
+                            <form action="{{ url_for('notification.mark_all_as_read') }}" method="POST"
+                                class="dropdown-item text-center">
+                                <input type="hidden" name="user_id" value="{{ user_id }}">
+                                <input type="hidden" name="next_url" value="{{ request.url }}">
+                                
+                                <button type="submit"
+                                    style="color: #28a745; font-weight: bold; width: 100%; background: none; border: none;">Tandai
+                                    Baca Semua</button>
+                            </form>
+                        </div>
+
+                        {% else %}
+                        <div class="dropdown-item text-center text-muted" style="font-size: 14px;">Tidak ada notifikasi
+                        </div>
+                        {% endif %}
+                    </div>
+
                 </div>
+
+
+
                 <div class="dropdown my-auto d-lg-flex d-none">
                     <a href="{{url_for('main.profile')}}" id="profileDropdown">
                         <i class='bx bxs-user fs-2'></i>
@@ -96,24 +137,23 @@
 
                     <ul class="dropdown-menu dropdown-menu-end my-2 profileDropdown">
                         <li><a class="dropdown-item d-flex justify-content-between align-items-center"
-                                href="{{ url_for('main.profile') }}">Profile<i class='bx bx-user'></i></a></li>
+                                href="{{ url_for('main.profile') }}">Akun Saya<i class='bx bx-user'></i></a></li>
                         <li><a class="dropdown-item d-flex justify-content-between align-items-center"
                                 href="{{ url_for('main.order') }}">Pesanan<i class='bx bx-receipt'></i></a></li>
                         <li>
                             <hr class="dropdown-divider">
                         </li>
                         <li><a class="dropdown-item d-flex justify-content-between align-items-center"
-                                href="{{ url_for('auth.logout') }}">Logout<i class='bx bx-log-out-circle'></i></a></li>
+                                href="{{ url_for('auth.logout') }}">Keluar<i class='bx bx-log-out-circle'></i></a></li>
                     </ul>
                 </div>
 
 
 
                 {% else %}
-                <!-- Display when not logged in -->
                 <div class="d-lg-flex d-none">
-                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary me-2 text-white">Login</a>
-                    <a href="{{ url_for('auth.register') }}" class="btn btn-outline-secondary">Register</a>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary me-2 text-white">Masuk</a>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-outline-secondary">Daftar</a>
                 </div>
                 {% endif %}
             </div>
@@ -124,7 +164,7 @@
 
 
 
-<!-- Navbar Bottom for small screens -->
+<!-- Navbar Bottom mobile -->
 <div class="container-fluid fixed-bottom d-flex d-lg-none bg-white rounded-top shadow shadow-sm">
     <nav class="navbar navbar-light navbar-expand-sm w-100">
         <div class="container">
@@ -132,33 +172,39 @@
                 <a href="{{ url_for('main.index') }}"
                     class="nav-item nav-link d-flex flex-column align-items-center {% if request.endpoint == 'main.index' %} bg-primary text-white rounded-3 p-3 {% endif %}">
                     <i class='bx bx-home-alt'></i>
-                    <small class="mt-1">Home</small>
+                    <small class="mt-1">Beranda</small>
                 </a>
 
+                <a href="{{ url_for('main.berita') }}"
+                    class="nav-item nav-link d-flex flex-column align-items-center {% if request.endpoint == 'main.berita' %} bg-primary text-white rounded-3 p-3 {% endif %}">
+                    <i class='bx bx-news'></i>
+
+                    <small class="ms-2">Berita</small>
+
+                </a>
                 <a href="{{ url_for('main.shop') }}"
                     class="nav-item nav-link d-flex flex-column align-items-center {% if request.endpoint == 'main.shop' %} bg-primary text-white rounded-3 p-3 {% endif %}">
                     <i class='bx bx-store'></i>
-                    
-                    <small class="ms-2">Shop</small>
-                    
+
+                    <small class="ms-2">Produk</small>
+
                 </a>
                 <a href="{{ url_for('main.order') }}"
                     class="nav-item nav-link d-flex flex-column align-items-center {% if request.endpoint == 'main.order' %} bg-primary text-white rounded-3 p-3 {% endif %}">
                     <i class='bx bx-receipt'></i>
-                    
+
                     <small class="ms-2">Pesanan</small>
-                    
+
                 </a>
                 <a href="{{ url_for('main.profile') }}"
                     class="nav-item nav-link d-flex flex-column align-items-center {% if request.endpoint == 'main.profile' %} bg-primary text-white rounded-3 p-3 {% endif %}">
                     <i class='bx bx-user'></i>
-                    
+
                     <small class="ms-2">Akun</small>
-                    
+
                 </a>
             </div>
         </div>
     </nav>
 </div>
 
-<!-- Navbar End -->

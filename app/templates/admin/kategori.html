@@ -41,7 +41,7 @@
                                         class="img-thumbnail me-2" width="50">
                                 </td>
                                 <td>{{ kategori.total_menu }}</td>
-                                <td>Rp. 1.200.000</td>
+                                <td>{{kategori.total_pendapatan | idr}}</td>
                                 <td>
                                     <button class="btn btn-primary btn-sm" data-bs-toggle="modal"
                                         data-bs-target="#editKategoriModal-{{ kategori.kategori.id }}">

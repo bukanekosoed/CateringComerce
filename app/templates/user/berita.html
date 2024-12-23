@@ -1,0 +1,30 @@
+{% extends "user/base.html" %}
+
+{% block title %}Berita{% endblock %}
+
+{% set Navbar = True %}
+{% set footer = True %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        
+        {% for news in news_list %}
+        <div class="col-12 col-md-6 col-lg-3 mb-2">
+                <div class="rounded position-relative fruite-item">
+                    <div class="fruite-img">
+                        <img src="{{ url_for('image.image', image_id=news.id) }}"
+                            class="img-fluid rounded-top object-fit-cover w-100" style=" height: 200px;"
+                            alt="{{news.tittle}}">
+                    </div>
+                    <div class="p-4 border border-secondary border-top-0 rounded-bottom text-start">
+                        <h6 class="card-title text-small">{{ news.title }}</h6>
+                        <a href="{{ url_for('main.detail', news_id=news.id) }}" class="btn btn-outline-primary">Baca Selengkapnya</a>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

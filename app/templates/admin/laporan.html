@@ -1,48 +1,39 @@
 {% extends 'admin/base.html' %}
 {% block content %}
 <div class="container mt-5">
-    <h2 class="mb-4">Laporan Penjualan</h2>
+    <h2 class="mb-4">Laporan Pendapatan</h2>
 
-    <!-- Filter -->
-    <form method="get" action="{{ url_for('admin.laporan') }}" class="mb-4">
-        <div class="row align-items-end">
-
-            <!-- Filter Kategori -->
-            <div class="col-md-3">
-                <label for="category" class="form-label">Filter Kategori</label>
-                <select name="category" id="category" class="form-select">
-                    <option value="" {% if not category_filter %}selected{% endif %}>Semua</option>
-                    {% for category in categories %}
-                    <option value="{{ category.id }}" {% if category_filter == category.id %}selected{% endif %}>{{ category.kategoriNama }}</option>
+    <!-- Form untuk filter tanggal, tahunan, bulanan -->
+    <form method="GET" action="{{ url_for('admin.laporan') }}" class="mb-4">
+        <div class="row">
+            
+            <div class="col-md-2">
+                <label for="year_filter" class="form-label">Filter Tahun</label>
+                <select name="year_filter" id="year_filter" class="form-control">
+                    <option value="">Pilih Tahun</option>
+                    {% for year in range(2023, 2050) %}
+                    <option value="{{ year }}" {% if request.args.get('year_filter')|int==year %}selected{% endif %}>
+                        {{ year }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="month_filter" class="form-label">Filter Bulan</label>
+                <select name="month_filter" id="month_filter" class="form-control" {% if not
+                    request.args.get('year_filter') %}disabled{% endif %}>
+                    <option value="">Pilih Bulan</option>
+                    {% for month in range(1, 13) %}
+                    <option value="{{ month }}" {% if request.args.get('month_filter')|int==month %}selected{% endif %}>
+                        {{ month }}
+                    </option>
                     {% endfor %}
                 </select>
             </div>
 
-            <!-- Filter Produk -->
-            <div class="col-md-3">
-                <label for="product" class="form-label">Filter Produk</label>
-                <select name="product" id="product" class="form-select">
-                    <option value="" {% if not product_filter %}selected{% endif %}>Semua</option>
-                    {% for product in products %}
-                    <option value="{{ product.id }}" {% if product_filter == product.id %}selected{% endif %}>{{ product.produkNama }}</option>
-                    {% endfor %}
-                </select>
-            </div>
 
-            <!-- Filter Tanggal -->
-            <div class="col-md-2">
-                <label for="date_start" class="form-label">Tanggal Mulai</label>
-                <input type="date" id="date_start" name="date_start" class="form-control"
-                    value="{{ date_start if date_start else '' }}">
-            </div>
-            <div class="col-md-2">
-                <label for="date_end" class="form-label">Tanggal Akhir</label>
-                <input type="date" id="date_end" name="date_end" class="form-control"
-                    value="{{ date_end if date_end else '' }}">
-            </div>
-
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">Terapkan</button>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Filter</button>
             </div>
         </div>
     </form>
@@ -55,19 +46,76 @@
                         <tr>
                             <th>Produk</th>
                             <th>Kategori</th>
-                            <th>Jumlah Terjual</th>
-                            <th>Total Pendapatan</th>
+                            <th>Total</th>
+                            <th>Pendapatan</th>
                         </tr>
                     </thead>
                     <tbody>
-                        
+                        {% set produk_dengan_pendapatan = produk_data | selectattr('total_pendapatan', '>', 0) | list %}
+                        {% if produk_dengan_pendapatan %}
+                        {% for produk in produk_dengan_pendapatan %}
+                        <tr>
+                            <td>
+                                <div class="d-flex mb-2">
+                                    <img src="{{ url_for('image.image', image_id=produk.produk.id) }}"
+                                        alt="{{ produk.produk.produkNama }}" class="img-fluid rounded me-2"
+                                        style="width: 40px; height: 40px;">
+                                    <div>
+                                        <h5>{{ produk.produk.produkNama }}</h5>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ produk.produk.kategori.kategoriNama }}</td>
+                            <td>{{ produk.quantity }}</td>
+                            <td>{{ produk.total_pendapatan | idr }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center">Tidak ada data produk yang tersedia.</td>
+                        </tr>
+                        {% endif %}
                     </tbody>
+
                 </table>
             </div>
 
-            <!-- Pagination -->
-            
+            <!-- Navigasi Pagination -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <small>Halaman {{ page }} dari {{ total_pages }}</small>
+                <nav>
+                    <ul class="pagination">
+                        {% if page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('admin.laporan', page=page-1) }}">Sebelumnya</a>
+                        </li>
+                        {% endif %}
+                        {% for p in range(1, total_pages + 1) %}
+                        <li class="page-item {% if p == page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('admin.laporan', page=p) }}">{{ p }}</a>
+                        </li>
+                        {% endfor %}
+                        {% if page < total_pages %} <li class="page-item">
+                            <a class="page-link" href="{{ url_for('admin.laporan', page=page+1) }}">Berikutnya</a>
+                            </li>
+                            {% endif %}
+                    </ul>
+                </nav>
+            </div>
+
         </div>
     </div>
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-body text-end">
+                    <h5 class="mb-0"><strong>Total Pendapatan</strong></h5>
+                    <h3 class="text-success">{{ semua_pendapatan |idr }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Tombol untuk ekspor PDF dan Excel -->
+
 </div>
 {% endblock %}

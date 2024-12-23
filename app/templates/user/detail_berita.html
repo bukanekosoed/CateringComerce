@@ -1,0 +1,69 @@
+{% extends "user/base.html" %}
+
+{% block title %}
+{{ news.title }}
+{% endblock %}
+{% set Navbar = True %}
+{% set footer = True %}
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <!-- Berita Utama -->
+        <div class="col-lg-8">
+            <!-- Judul Berita -->
+            <h1 class="mb-4 text-center fw-bold display-5 text-black">{{ news.title }}</h1>
+
+            <!-- Gambar Berita -->
+            {% if news.image %}
+            <div class="text-center mb-4">
+                <img src="{{ url_for('image.image', image_id=news.id) }}" 
+                    class="img-fluid rounded-3 shadow-lg w-100" 
+                    style="max-height: 350px; object-fit: cover;" 
+                    alt="{{ news.title }}">
+            </div>
+            {% endif %}
+
+            <!-- Teks Berita -->
+            <div class="mt-4" style="text-align: justify;">
+                {% for paragraph in news.description.split('\n') %}
+                <p style="text-indent: 30px;" class="mb-3 lh-md text-muted">
+                    {{ paragraph }}
+                </p>
+                {% endfor %}
+            </div>
+
+            <!-- Tanggal dan Tombol Kembali -->
+            <div class="mt-5">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        <i class="bi bi-calendar-event"></i> Dibuat pada: {{ news.created_at| gmt7 }}
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Berita Lainnya -->
+        <div class="col-lg-4">
+            <h2 class="mb-4 text-black">Berita Lainnya</h2>
+            <div class="list-group">
+                {% for other_news in other_news_list %}
+                <a href="{{ url_for('main.detail', news_id=other_news.id) }}" 
+                   class="list-group-item list-group-item-action d-flex align-items-center">
+                    <img src="{{ url_for('image.image', image_id=other_news.id) }}" 
+                        class="img-fluid me-3" 
+                        style="width: 60px; height: 60px; object-fit: cover;" 
+                        alt="{{ other_news.title }}">
+                    <div>
+                        <h6 class="mb-1 fw-bold">{{ other_news.title }}</h6>
+                        <small class="text-muted">
+                            <i class='bx bx-calendar'></i> {{ other_news.created_at| gmt7 }}
+                        </small>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

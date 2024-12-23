@@ -53,78 +53,53 @@
       <li class="menu-header small text-uppercase">
         <span class="menu-header-text">Pesanan</span>
       </li>
-      <li class="menu-item">
-        <a href="#" class="menu-link menu-toggle">
+      
+      <li class="menu-item {% if request.endpoint == 'admin.pesanan' %} active {% endif %}">
+        <a href="{{url_for('admin.pesanan')}}" class="menu-link">
           <i class="menu-icon tf-icons bx bx-receipt"></i>
           <div data-i18n="Basic">Pesanan</div>
         </a>
-        <ul class="menu-sub">
-          <li class="menu-item">
-            <a href="{{url_for('admin.pesanan')}}" class="menu-link">
-              <div>Daftar Pesanan</div>
-            </a>
-          </li>
-          <li class="menu-item">
-            <a href="ui-tooltips-popovers.html" class="menu-link">
-              <div>Detail Pesanan</div>
-            </a>
-          </li>
-        </ul>
       </li>
       <!-- Laporan -->
       <li class="menu-header small text-uppercase">
         <span class="menu-header-text">Laporan</span>
       </li>
-      <li class="menu-item">
-        <a href="#" class="menu-link menu-toggle">
+      <li class="menu-item {% if request.endpoint == 'admin.laporan' %} active {% endif %}">
+        <a href="{{url_for('admin.laporan')}}" class="menu-link">
           <i class="menu-icon tf-icons bx bxs-report"></i>
           <div data-i18n="Basic">Laporan</div>
         </a>
-        <ul class="menu-sub">
-          <li class="menu-item">
-            <a href="ui-carousel.html" class="menu-link">
-              <div>Laporan Tahunan</div>
-            </a>
-          </li>
-          <li class="menu-item">
-            <a href="ui-tooltips-popovers.html" class="menu-link">
-              <div>Laporan Bulanan</div>
-            </a>
-          </li>
-        </ul>
       </li>
-      <!-- Konfigurasi -->
+
+      <!-- Laporan -->
       <li class="menu-header small text-uppercase">
-        <span class="menu-header-text">Konfigurasi Aplikasi</span>
+        <span class="menu-header-text">Berita</span>
       </li>
-      <li class="menu-item">
-        <a href="#" class="menu-link menu-toggle">
-          <i class='menu-icon tf-icons bx bx-cog'></i>
-          <div data-i18n="Basic">Konfigurasi Aplikasi</div>
+      <li class="menu-item {% if request.endpoint == 'admin.daftar_news' %} active {% endif %}">
+        <a href="{{url_for('admin.daftar_news')}}" class="menu-link">
+          <i class="menu-icon tf-icons bx bx-news"></i>
+          <div data-i18n="Basic">Berita</div>
         </a>
-        <ul class="menu-sub">
-          <li class="menu-item">
-            <a href="#" class="menu-link">
-              <div>Setting Aplikasi</div>
-            </a>
-          </li>
-          <li class="menu-item">
-            <a href="ui-tooltips-popovers.html" class="menu-link">
-              <div>Jadwal Pengiriman</div>
-            </a>
-          </li>
-        </ul>
       </li>
+      
       <!-- Logout -->
       <li class="menu-header small text-uppercase">
         <span class="menu-header-text">Akun</span>
       </li>
+      <li class="menu-item {% if request.endpoint == 'admin.user' %} active {% endif %}">
+        <a href="{{url_for('admin.user')}}" class="menu-link">
+          <i class="menu-icon tf-icons bx bx-user"></i>
+          <div data-i18n="Logout">Daftar Pengguna</div>
+        </a>
+      </li>
+
       <li class="menu-item">
         <a href="{{url_for('auth.logout')}}" class="menu-link">
           <i class="menu-icon tf-icons bx bx-log-out"></i>
           <div data-i18n="Logout">Logout</div>
         </a>
       </li>
+
     </ul>
 </aside>
 

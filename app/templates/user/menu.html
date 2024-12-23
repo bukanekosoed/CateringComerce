@@ -123,7 +123,7 @@
                             <li
                                 class="{% if request.path == url_for('main.shop') and not request.args.get('kategori') %}bg-secondary py-1 px-2 rounded{% endif %}">
                                 <a href="{{ url_for('main.shop') }}">
-                                    <div class="d-flex justify-content-between fruite-name">
+                                    <div class="d-flex justify-content-between fruite-name {% if request.path == url_for('main.shop') and not request.args.get('kategori') %}text-white{% endif %}">
                                         Semua Menu
                                         <span>({{ total_all_products }})</span>
                                     </div>
@@ -133,7 +133,7 @@
                             <li
                                 class="{% if request.args.get('kategori')|to_string == kategori.id|to_string %}bg-secondary py-1 px-2 rounded{% endif %}">
                                 <a href="{{ url_for('main.shop', kategori=kategori.id) }}">
-                                    <div class="d-flex justify-content-between fruite-name">
+                                    <div class="d-flex justify-content-between fruite-name {% if request.args.get('kategori')|to_string == kategori.id|to_string %}text-white{% endif %}">
                                         {{ kategori.kategoriNama }}
                                         <span>({{ kategori_counts[kategori.id] }})</span>
                                     </div>

@@ -495,3 +495,27 @@
 }
 /*** Footer End ***/
 
+.profileDropdown {
+    display: none; /* Sembunyikan dropdown secara default */
+    position: absolute; /* Pastikan dropdown berada di bawah navbar */
+    top: 100%; /* Menempatkan dropdown tepat di bawah navbar */
+    left: 0;
+    z-index: 999; /* Pastikan dropdown muncul di atas elemen lain */
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1); /* Efek bayangan untuk dropdown */
+}
+
+/* Membatasi lebar dropdown */
+#address-select {
+    max-width: 100%;
+    width: auto;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+/* Agar tampilan alamat lebih rapih */
+#address-select option {
+    white-space: normal; /* Membuat baris alamat lebih panjang jika perlu */
+    word-wrap: break-word; /* Menjaga agar teks yang panjang tetap terbungkus */
+}
+

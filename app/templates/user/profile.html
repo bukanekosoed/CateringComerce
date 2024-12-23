@@ -1,0 +1,93 @@
+{% extends 'user/base.html' %}
+
+{% block title %}Akun Saya{% endblock %}
+{% set Navbar = True %}
+{% set footer = True %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-5">Akun Saya</h2>
+
+    <!-- Informasi Pribadi -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow border-0 mb-4 rounded-3">
+                <div class="card-header bg-primary text-white text-center">
+                    <h5 class="mb-0">Informasi Pribadi</h5>
+                </div>
+                <div class="card-body text-center">
+                    <p><strong>Nama:</strong> {{ user.name }}</p>
+                    <p><strong>Email:</strong> {{ user.email }}</p>
+                    <p><strong>Telepon:</strong> {{ user.phone }}</p>
+                </div>
+                <div class="card-footer text-center">
+                    <a class="btn btn-outline-danger rounded-pill px-4 d-flex justify-content-between align-items-center"
+                                href="{{ url_for('auth.logout') }}">Keluar<i class='bx bx-log-out-circle'></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pengaturan Akun -->
+        <div class="col-md-8">
+            <div class="card shadow border-0 mb-4 rounded-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Pengaturan Akun</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nama Lengkap</label>
+                            <input type="text" class="form-control shadow-sm" id="name" name="name"
+                                value="{{ user.name }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control shadow-sm" id="email" name="email"
+                                value="{{ user.email }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Telepon</label>
+                            <input type="text" class="form-control shadow-sm" id="phone" name="phone"
+                                value="{{ user.phone }}">
+                        </div>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4 w-100">Simpan Perubahan</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alamat Tersimpan -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow border-0 mb-4 rounded-3">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Alamat Tersimpan</h5>
+                    <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#addAddressModal">
+                        Tambah Alamat
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for address in user.addresses %}
+                        <div
+                            class="list-group-item d-flex justify-content-between align-items-center border-0 bg-light rounded mb-2">
+                            <div>
+                                <h6 class="mb-1">{{ address.address_type }}</h6>
+                                <p class="mb-0 text-muted">{{ address.full_address }}</p>
+                            </div>
+                            <form
+                                action="{{ url_for('main.delete_address', address_index=loop.index0, next_url=request.path) }}"
+                                method="post">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Hapus</button>
+                            </form>
+                        </div>
+                        {% else %}
+                        <p class="text-center">Tidak ada alamat tersimpan.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

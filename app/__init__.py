@@ -4,11 +4,14 @@ from flask_login import LoginManager
 from flask_session import Session
 from flask_pymongo import PyMongo
 from .models import  Users, Admin
+import pytz
+
 # Import and register blueprints
 from .auth import auth_bp,oauth
 from .user import user_bp
 from .admin import admin_bp
 from .image import image_bp
+from .notification import notification_bp
 
 def create_app():
     app = Flask(__name__)
@@ -49,6 +52,15 @@ def create_app():
     @app.template_filter('idr')
     def idr_format(value):
         return f"Rp {value:,.0f}".replace(',', '.')
+    
+    @app.template_filter('gmt7')
+    def gmt7_filter(value):
+        indonesia_tz = pytz.timezone('Asia/Jakarta')
+        if value is not None:
+            if value.tzinfo is None:  # Jika waktu tidak memiliki zona waktu
+                value = pytz.utc.localize(value)  # Menganggap waktu UTC
+            value = value.astimezone(indonesia_tz)
+        return value.strftime('%d %b %Y, %H:%M WIB')
 
     @app.template_filter('to_string')
     def to_string(value):
@@ -62,6 +74,7 @@ def create_app():
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(admin_bp, url_prefix='/dashboard')
+    app.register_blueprint(notification_bp, url_prefix='/api')
     app.register_blueprint(image_bp)
     app.register_blueprint(user_bp)
 

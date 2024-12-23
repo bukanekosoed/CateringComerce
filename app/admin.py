@@ -1,16 +1,25 @@
 from flask import Blueprint, render_template,request, redirect,jsonify,flash,url_for,abort,make_response, send_file
-from .models import Kategori,Produk,Orders,Users
+from .models import Kategori,Produk,Orders,Users,Notification,News
 from mongoengine.errors import NotUniqueError,ValidationError
 from werkzeug.utils import secure_filename
 from gridfs.errors import NoFile
 from math import ceil
+from collections import defaultdict
 import io
+from twilio.rest import Client
+import os
 from openpyxl import Workbook
 from .decorators import login_required, admin_required
 from datetime import datetime
 from babel.dates import format_datetime
 from bson import ObjectId
 
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
+TWILIO_WHATSAPP_SANDBOX_NUMBER = os.getenv("TWILIO_WHATSAPP_SANDBOX_NUMBER")
+
+# Inisialisasi Twilio Client
+twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
 admin_bp = Blueprint('admin', __name__)
 @admin_bp.before_request
@@ -211,11 +220,27 @@ def kategori():
     kategoris = Kategori.objects.all()
     kategori_data = []
 
+    pendapatan_per_kategori = defaultdict(int)
+
+    # Iterasi semua pesanan
+    for order in Orders.objects(payment_status="berhasil"):
+        for item in order.items:
+            # Cari kategori produk yang sesuai dengan item
+            produk = Produk.objects.get(id=item.product.id)  # Pastikan `item.produk.id` mengarah pada produk yang benar
+            kategori = produk.kategori  # Ambil kategori produk
+            pendapatan_per_item = item.quantity * produk.produkHarga
+            # Tambahkan pendapatan grand_total ke kategori yang sesuai
+            pendapatan_per_kategori[kategori.id] += pendapatan_per_item
+
+    # Menyusun data kategori dengan total pendapatan
     for kategori in kategoris:
-        total_menu = Produk.objects(kategori=kategori.id).count()  # Count the number of products in this category
+        total_menu = Produk.objects(kategori=kategori.id).count()
+        total_pendapatan = pendapatan_per_kategori.get(kategori.id, 0)  # Dapatkan pendapatan kategori, default 0
+
         kategori_data.append({
             'kategori': kategori,
             'total_menu': total_menu,
+            'total_pendapatan': total_pendapatan
         })
     return render_template('admin/kategori.html',kategoris=kategori_data)
 
@@ -268,6 +293,8 @@ def delete_kategori(kategori_id):
     
         flash('Kategori dan gambar berhasil dihapus!', 'success')
     return redirect(url_for('admin.kategori'))
+
+
 
 
 @admin_bp.route('/pesanan', methods=['GET', 'POST'])
@@ -336,10 +363,57 @@ def pesanan():
         # Cari pesanan berdasarkan order_id
         order = Orders.objects(id=order_id).first()
         if order:
-            order.update(set__order_status=new_status)  # Update status pesanan
+            # Update status pesanan
+            order.update(set__order_status=new_status)  
             flash("Status pesanan berhasil diperbarui!", "success")
+
+            # Buat notifikasi untuk pengguna
+            if order.user:
+                user = Users.objects(id=order.user.id).first()
+                if user:
+                    # Membuat entri notifikasi baru
+                    notification = Notification(
+                        user=user,
+                        order_id=str(order.order_id),  # Menyimpan order_id sebagai string
+                        title="Status Pesanan Diperbarui",
+                        message=f"Status pesanan Anda telah diperbarui menjadi: {new_status}",
+                        created_at=datetime.utcnow(),
+                        is_read=False
+                    )
+                    notification.save()  # Simpan notifikasi ke database
+
+                    # Kirim pesan WhatsApp hanya jika status pesanan adalah 'dikirim'
+                    if new_status == "dikirim":
+                        user_phone = user.phone  # Nomor telepon pengguna (pastikan sudah dalam format internasional)
+                        if user_phone:
+                            # Konversi nomor telepon ke format internasional
+                            if user_phone.startswith('0'):
+                                user_phone = '+62' + user_phone[1:]
+                            
+                            # Tentukan pesan WhatsApp berdasarkan opsi pengiriman
+                            if order.delivery_option == "delivery":
+                                message = (f"Halo, { user.name }!\n\n"
+                                           f"Pesanan Anda dengan ID *{order.order_id}* sedang dikirim ke *{ order.user.addresses[order.address_index].full_address}*\n\n" 
+                                           f"Terima kasih telah mempercayai *Langgeng Catering*. 😊")
+                            elif order.delivery_option == "pickup":
+                                message = (f"Halo, { user.name }!\n\n"
+                                           f"Pesanan Anda dengan ID *{ order.order_id }* sudah siap untuk diambil. Silakan datang ke toko kami untuk mengambil pesanan Anda. Kami sangat menghargai kepercayaan Anda kepada *Langgeng Catering* dan senang dapat melayani Anda.\n\n"
+                                           f"Klik tautan berikut untuk melihat lokasi kami di peta:\n"  
+                                           f"https://maps.app.goo.gl/D9uSatv49dp1adYF7  \n\n"
+                                           f"Terima kasih, dan kami tunggu kedatangan Anda! 😊")
+
+                            # Kirim pesan WhatsApp melalui Twilio
+                            try:
+                                twilio_client.messages.create(
+                                    body=message,  # Isi pesan
+                                    from_='whatsapp:' + TWILIO_WHATSAPP_SANDBOX_NUMBER,  # Nomor Twilio WhatsApp Sandbox
+                                    to='whatsapp:' + user_phone  # Nomor pengguna yang ingin dikirimi pesan
+                                )
+                            except Exception as e:
+                                flash(f"Gagal mengirim pesan WhatsApp: {e}", "warning")
         else:
             flash("Pesanan tidak ditemukan", "danger")
+
 
         return redirect(url_for('admin.pesanan'))  # Redirect kembali ke halaman pesanan
 
@@ -356,7 +430,6 @@ def pesanan():
         date_start=date_start,
         date_end=date_end
     )
-
 
 
 
@@ -407,9 +480,89 @@ def delete_user(user_id):
     return redirect(url_for('admin.user'))
 
 
-@admin_bp.route('/laporan-penjualan')
+
+
+@admin_bp.route('/laporan-penjualan', methods=['GET'])
 def laporan():
-    return render_template('admin/laporan.html')
+    # Ambil parameter dari request
+    year_filter = request.args.get('year_filter')
+    month_filter = request.args.get('month_filter')
+    # Ambil parameter halaman dari query string, default halaman pertama
+    page = int(request.args.get('page', 1))
+    per_page = 10  # Jumlah item per halaman
+
+    # Ambil data produk dengan paginasi
+    produk_data_query = Produk.objects().order_by('produkNama')
+    total_items = produk_data_query.count()
+    produk_data_paginated = produk_data_query.skip((page - 1) * per_page).limit(per_page)
+
+    
+    # Ambil semua kategori
+    kategoris = Kategori.objects.all()
+    produk_data = []
+    kategori_data = []
+    total_pendapatan_all = 0
+
+    # Struktur untuk menyimpan pendapatan per kategori dan per produk
+    pendapatan_per_kategori = defaultdict(int)
+    pendapatan_per_produk = defaultdict(int)
+    kuantitas_per_produk = defaultdict(int)
+
+
+    # Iterasi semua pesanan dengan status pembayaran 'berhasil' dan sesuai rentang tanggal
+    for order in Orders.objects(payment_status="berhasil"):
+        
+        # Filter berdasarkan tahun dan bulan
+        if year_filter and order.transaction_time.year != int(year_filter):
+            continue
+        if month_filter and order.transaction_time.month != int(month_filter):
+            continue
+
+        for item in order.items:
+            # Cari produk yang sesuai dengan item
+            produk = Produk.objects.get(id=item.product.id)  # Pastikan `item.product.id` mengarah pada produk yang benar
+            
+            # Ambil kategori produk
+            kategori = produk.kategori
+            
+            # Hitung pendapatan per item (quantity * harga produk)
+            pendapatan_per_item = item.quantity * produk.produkHarga
+            
+            # Tambahkan pendapatan per item ke kategori dan produk yang sesuai
+            pendapatan_per_kategori[kategori.id] += pendapatan_per_item
+            pendapatan_per_produk[produk.id] += pendapatan_per_item
+            
+            # Tambahkan kuantitas produk yang dipesan
+            kuantitas_per_produk[produk.id] += item.quantity
+            total_pendapatan_all += pendapatan_per_item
+    # Menyusun data kategori dengan total pendapatan
+    for kategori in kategoris:
+        total_menu = Produk.objects(kategori=kategori.id).count()
+        total_pendapatan = pendapatan_per_kategori.get(kategori.id, 0)  # Dapatkan pendapatan kategori, default 0
+
+        kategori_data.append({
+            'kategori': kategori,
+            'total_menu': total_menu,
+            'total_pendapatan': total_pendapatan
+        })
+
+    # Menyusun data produk dengan total pendapatan dan kuantitas
+    for produk in Produk.objects.all():
+        total_pendapatan = pendapatan_per_produk.get(produk.id, 0)  # Dapatkan pendapatan produk, default 0
+        total_kuantitas = kuantitas_per_produk.get(produk.id, 0)  # Dapatkan total kuantitas produk, default 0
+        
+        produk_data.append({
+            'produk': produk,
+            'quantity': total_kuantitas,  # Menampilkan kuantitas total yang dipesan
+            'total_pendapatan': total_pendapatan,
+        })
+
+    # Hitung jumlah halaman menggunakan ceil
+    total_pages = ceil(total_items / per_page)
+    # Kembalikan data ke template untuk ditampilkan
+    return render_template('admin/laporan.html', kategori_data=kategori_data, produk_data=produk_data,semua_pendapatan=total_pendapatan_all,page=page,
+        total_pages=total_pages)
+
 
 @admin_bp.route('/revenue/<int:year>')
 def revenue(year):
@@ -420,3 +573,86 @@ def revenue(year):
 
     return jsonify(monthly_revenue)
 
+@admin_bp.route('/news')
+def daftar_news():
+    news = News.objects.all()  # Mengambil semua berita dari database
+    return render_template('admin/news.html', news=news)
+
+
+@admin_bp.route('/news/tambah-news', methods=['GET', 'POST'])
+def tambah_news():
+    if request.method == 'POST':
+        judul = request.form['newsTitle']
+        deskripsi = request.form['newsDesc']
+        gambar = request.files['newsImg']
+        
+
+        # Cek apakah judul berita sudah ada
+        existing_news = News.objects(title=judul).first()
+        if existing_news:
+            flash('Judul berita sudah ada, gunakan judul lain.', 'danger')
+            return redirect(url_for('admin.tambah_news'))
+        
+        # Buat objek News
+        news = News(
+            title=judul,
+            description=deskripsi,
+        )
+        news.save()
+
+        # Simpan gambar jika ada
+        if gambar:
+            filename = secure_filename(gambar.filename)
+            news.image.put(gambar, content_type=gambar.content_type)
+            news.save()
+        
+        flash('Berita berhasil ditambahkan!', 'success')
+        return redirect(url_for('admin.daftar_news'))
+
+    return render_template('admin/add_news.html',
+                           kategoris=Kategori.objects.all())
+
+@admin_bp.route('/news/edit-news/<news_id>', methods=['GET', 'POST'])
+def edit_news(news_id):
+    news = News.objects(id=news_id).first()
+    if not news:
+        flash('Berita tidak ditemukan.', 'danger')
+        return redirect(url_for('admin.daftar_news'))
+
+    if request.method == 'POST':
+        judul = request.form['newsTitle']
+        deskripsi = request.form['newsDesc']
+        gambar = request.files.get('newsImg', None)
+
+        # Cek apakah judul sudah digunakan oleh berita lain
+        existing_news = News.objects(title=judul, id__ne=news.id).first()
+        if existing_news:
+            flash('Judul berita sudah ada, gunakan judul lain.', 'danger')
+            return redirect(url_for('admin.edit_news', news_id=news.id))
+
+        # Update data berita
+        news.title = judul
+        news.description = deskripsi
+
+        # Update gambar jika ada
+        if gambar:
+            filename = secure_filename(gambar.filename)
+            news.image.replace(gambar, content_type=gambar.content_type)
+        
+        news.save()
+
+        flash('Berita berhasil diperbarui!', 'success')
+        return redirect(url_for('admin.daftar_news'))
+
+    return render_template('admin/edit_news.html', news=news)
+
+@admin_bp.route('/news/delete-news/<news_id>', methods=['POST'])
+def delete_news(news_id):
+    news = News.objects(id=news_id).first()
+    if not news:
+        flash('Berita tidak ditemukan.', 'danger')
+        return redirect(url_for('admin.daftar_news'))
+
+    news.delete()
+    flash('Berita berhasil dihapus!', 'success')
+    return redirect(url_for('admin.daftar_news'))

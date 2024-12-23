@@ -1,0 +1,56 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Daftar Berita</h2>
+
+    <a href="{{ url_for('admin.tambah_news') }}" class="btn btn-primary mb-3">Tambah Berita</a>
+
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Judul</th>
+                    <th>Deskripsi</th>
+                    <th>Gambar</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for news_item in news %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ news_item.title }}</td>
+                    <td>{{ news_item.description[:100] }}...</td>
+                    <td>
+                        {% if news_item.image %}
+                        <img src="{{ url_for('image.image', image_id=news_item.id) }}" alt="Image" width="50">
+                        {% else %}
+                        Tidak ada gambar
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('admin.edit_news', news_id=news_item.id) }}" class="btn btn-warning btn-sm">
+                                Edit
+                            </a>
+                            <form method="POST" action="{{ url_for('admin.delete_news', news_id=news_item.id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-danger btn-sm"
+                                        onclick="return confirm('Apakah Anda yakin ingin menghapus berita ini?')">
+                                    Hapus
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if not news %}
+    <p>Tidak ada berita yang tersedia.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -5,15 +5,6 @@
         <div class="col-8">
             <h1>Daftar Menu</h1>
         </div>
-        <div class="col-4 d-flex justify-content-end align-items-center">
-            <a href="{{url_for('admin.tambah_produk')}}">
-
-                <div class="btn btn-primary d-flex">
-                    <i class='bx bx-plus'></i>
-                    <small class="d-none d-md-block">Tambah Produk</small>
-                </div>
-            </a>
-        </div>
     </div>
 
     <!-- Search and Filter Form -->
@@ -49,6 +40,12 @@
     <div class="col-lg-12 grid-margin stretch-card">
         <div class="card">
             <div class="card-body">
+                <div class="d-flex justify-content-end mb-3">
+                    <a href="{{ url_for('admin.tambah_produk') }}" class="btn btn-primary d-flex align-items-center">
+                        <i class='bx bx-plus me-2'></i>
+                        <small class="d-none d-md-block">Tambah Produk</small>
+                    </a>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-borderless table-hover">
                         <thead class="thead-dark">
