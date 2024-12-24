@@ -16,6 +16,14 @@ from .notification import notification_bp
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+    app.config["MONGO_URI"]
+    app.config["SECRET_KEY"]
+    app.config["DB_NAME"]
+    app.config["SESSION_TYPE"]
+    app.config["SESSION_MONGODB_DB"]
+    app.config["SESSION_MONGODB_COLLECT"]
+    app.config["MIDTRANS_SERVER_KEY"]
+    app.config["MIDTRANS_CLIENT_KEY"]
 
     # Inisialisasi Flask-PyMongo
     mongo = PyMongo(app)
