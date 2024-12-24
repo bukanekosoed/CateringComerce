@@ -5,6 +5,7 @@ from flask_session import Session
 from flask_pymongo import PyMongo
 from .models import  Users, Admin
 import pytz
+import os
 
 # Import and register blueprints
 from .auth import auth_bp,oauth
@@ -16,14 +17,14 @@ from .notification import notification_bp
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
-    app.config["MONGO_URI"]
-    app.config["SECRET_KEY"]
-    app.config["DB_NAME"]
-    app.config["SESSION_TYPE"]
-    app.config["SESSION_MONGODB_DB"]
-    app.config["SESSION_MONGODB_COLLECT"]
-    app.config["MIDTRANS_SERVER_KEY"]
-    app.config["MIDTRANS_CLIENT_KEY"]
+    app.config["MONGO_URI"] = os.getenv('MONGO_URI')
+    app.config["SECRET_KEY"] = os.getenv('SECRET_KEY')
+    app.config["DB_NAME"] = os.getenv('DB_NAME')
+    app.config["SESSION_TYPE"] = os.getenv('SESSION_TYPE')
+    app.config["SESSION_MONGODB_DB"] = os.getenv('SESSION_MONGODB_DB')
+    app.config["SESSION_MONGODB_COLLECT"] = os.getenv('SESSION_MONGODB_COLLECT')
+    app.config["MIDTRANS_SERVER_KEY"] = os.getenv('MIDTRANS_SERVER_KEY')
+    app.config["MIDTRANS_CLIENT_KEY"] = os.getenv('MIDTRANS_CLIENT_KEY')
 
     # Inisialisasi Flask-PyMongo
     mongo = PyMongo(app)
