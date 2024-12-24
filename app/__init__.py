@@ -78,4 +78,17 @@ def create_app():
     app.register_blueprint(image_bp)
     app.register_blueprint(user_bp)
 
+    def create_admin_user():
+        if not Admin.objects(email="admin@admin.com"):
+            admin = Admin(
+                name="Default Admin",
+                email="admin@admin.com"
+            )
+            admin.set_password("admin123@1234")  # Set hashed password
+            admin.save()
+            print("Admin user created: admin@example.com/admin123")
+        else:
+            print("Admin user already exists.")
+
+    create_admin_user()
     return app
