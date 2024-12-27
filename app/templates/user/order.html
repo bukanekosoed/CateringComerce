@@ -44,7 +44,7 @@ Riwayat Pemesanan
                     </div>
                     <div class="text-end">
                         {% if order.payment_status == 'menunggu' %}
-                        <span class="badge bg-warning text-dark">Menunggu Pembayaran</span>
+                        <span class="badge bg-warning text-dark">Menunggu</span>
                         {% endif %}
                         {% if order.order_status %}
                         <span
@@ -64,7 +64,17 @@ Riwayat Pemesanan
                             alt="{{ item.product.produkNama }}" class="rounded me-3"
                             style="width: 100px; height: 100px; object-fit: cover;">
                         <div class="flex-grow-1">
-                            <p class="mb-0"><strong>{{ item.product.produkNama }}</strong></p>
+                            
+                            <p class="mb-0">
+                                <strong>
+                                    {% if item.variant %}
+                                    {{ item.product.produkNama }} - {{ item.variant }}
+                                    {% else %}
+                                    {{ item.product.produkNama }}
+                                    {% endif %}
+                                </strong>
+                            </p>
+
                             <p class="mb-0 text-muted">{{ item.quantity }} x {{ item.product.produkHarga | idr }}</p>
                         </div>
                         <div class="text-end">
@@ -82,10 +92,11 @@ Riwayat Pemesanan
                     </button>
 
                     {% elif order.payment_status != 'menunggu' and order.order_status != 'dibatalkan' %}
-                    <button type="button" class="btn btn-outline-primary rounded-pill px-3" data-bs-toggle="modal"
-                        data-bs-target="#orderReceiptModal{{ order.transaction_id }}">
+                    <a href="{{ url_for('main.view_invoice', transaction_id=order.transaction_id) }}"
+                        class="btn btn-outline-primary rounded-pill px-3">
                         Lihat Struk
-                    </button>
+                    </a>
+
                     {% endif %}
 
                 </div>

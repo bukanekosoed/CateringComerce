@@ -132,7 +132,7 @@ class Orders(Document):
     vat = IntField()
     delivery_date = StringField()
     transaction_time = DateTimeField(default=get_current_time)
-    transaction_id = StringField()
+    transaction_id = StringField(default="menunggu78513")
     payment_type = StringField()
     payment_status = StringField(default="menunggu")
     expiry_time = DateTimeField()

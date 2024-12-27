@@ -1,133 +1,117 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Invoice</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <p class="mb-1"><strong>Nama Penjual:</strong> Langgeng
-                    Catering</p>
-                <p class="mb-1"><strong>No. Pesanan:</strong>
-                    {{order.order_id}}
-                </p>
-                <p class="mb-1"><strong>Waktu Pembayaran:</strong> {{
-                    order.transaction_time }}
-                </p>
-                <p class="mb-1"><strong>Metode Pembayaran:</strong> {{
-                    order.payment_type }}</p>
-                <p class="mb-1"><strong>Jasa Kirim:</strong> {% if
-                    order.delivery_option == 'pickup' %}
-                    Diambil di Toko
-                    {% elif order.delivery_option == 'delivery' %}
-                    Diantar Ke
-                    {{order.user.addresses[order.address_index].address_type}}
-                    {% else %}
-                    Pilihan Pengiriman Tidak Diketahui
-                    {% endif %}</p>
-            </div>
-            <div class="col-md-6">
-                <p class="mb-1"><strong>Nama Pembeli:</strong>
-                    {{order.user.name}}</p>
-                <p class="mb-1"><strong>No. Handphone:</strong>
-                    {{order.user.phone}}</p>
-                <p class="mb-1"><strong>Alamat Pembeli:</strong></p>
-                <p class="small">
-                    {{order.user.addresses[order.address_index].full_address}}
-                </p>
+{% extends "user/base.html" %}
+
+{% block title %}Invoice {{ transaction.order_id }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="card shadow-lg rounded-lg border-0" id="content-pdf">
+        <!-- Card Header -->
+        <div class="card-header text-center">
+            <h3 class="display-4">Invoice</h3>
+            <div class="d-flex justify-content-between flex-wrap">
+                <p>Order ID: <strong>{{ transaction.order_id }}</strong></p>
+                <p class="fs-4"><strong>Status: {{ transaction.payment_status }}</strong></p>
             </div>
         </div>
-    </div>
-    </div>
 
-    <!-- Rincian Pesanan -->
-    <div class="card mb-4">
         <div class="card-body">
-            <h5 class="card-title">Rincian Pesanan</h5>
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>No.</th>
-                            <th>Produk</th>
-                            <th>Variasi</th>
-                            <th>Harga Produk</th>
-                            <th>Kuantitas</th>
-                            <th>Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <div class="row mb-4">
+                <!-- Informasi Pelanggan -->
+                <div class="col-md-6">
+                    <h5>Informasi Pelanggan</h5>
+                    <p><strong>Nama:</strong> {{ transaction.user.name }}</p>
+                    <p><strong>Email:</strong> {{ transaction.user.email }}</p>
+                    <p><strong>No. Telepon:</strong> {{ transaction.user.phone }}</p>
+                    <p><strong>Alamat:</strong> {{ transaction.user.addresses[transaction.address_index].full_address }}</p>
+                </div>
+                
 
-
-                        {% for item in order.items %}
-                        <tr>
-                            <td>{{loop.index}}</td>
-                            <td>{{ item.product.produkNama }}</td>
-                            <td>{{ item.variant }}</td>
-                            <td>{{ item.product.produkHarga | idr }}</td>
-                            <td>{{ item.quantity }}</td>
-                            <td>{{ (item.product.produkHarga * item.quantity) |
-                                idr }}</td>
-                        </tr>
-
-                        {% endfor %}
-
-                        <tr>
-                            <td colspan="5" class="text-end">
-                                <strong>Total</strong>
-                            </td>
-                            <td><strong>
-                                    {{(order.grand_total - order.shipping_cost -
-                                    order.vat )| idr}}
-                                </strong>
-                            </td>
-                        </tr>
-                    </tbody>
-                    </tbody>
-                </table>
+                <!-- Alamat Toko -->
+                <div class="col-md-6">
+                    <h5>Alamat Toko</h5>
+                    <p><strong>Nama Toko:</strong> Langgeng Catering</p>
+                    <p><strong>Email:</strong> info@langgengcatering.web.id</p>
+                    <p><strong>Telepon:</strong> +62 857 4280
+                        <p><strong>Alamat:</strong> Jl. Dr.Setiabudi No 38 Kembang Baru RT02 RW01,
+                            Kec. Brebes, Kabupaten Brebes, Jawa Tengah 52212</p>
+                        7503</p>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Rincian Pembayaran -->
-    <div class="card">
-        <div class="card-body">
-            <h5 class="card-title">Rincian Pembayaran</h5>
-            <div class="row">
-                <div class="col-md-6 offset-md-6">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Subtotal Pesanan</span>
-                        <span>{{(order.grand_total - order.shipping_cost -
-                            order.vat )| idr}}</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Subtotal Pengiriman</span>
-                        <span>{{order.shipping_cost | idr}}</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>PPN (11%) </span>
-                        <span>{{order.vat | idr}}</span>
-                    </div>
-                    <hr>
-                    <div class="d-flex justify-content-between fw-bold">
-                        <span>Total Pembayaran</span>
-                        <span>{{order.grand_total | idr}}</span>
-                    </div>
+            <!-- Rincian Pesanan -->
+            <h5 class="mb-4">Rincian Pesanan</h5>
+            <table class="table table-striped table-bordered table-hover">
+                <thead>
+                    <tr class="table-dark">
+                        <th>Item</th>
+                        <th>Harga</th>
+                        <th>Jumlah</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in transaction.items %}
+                    <tr>
+                        <td>
+                            <strong class="mb-0 fw-bold">
+                                {% if item.variant %}
+                                {{ item.product.produkNama }} - {{ item.variant }}
+                                {% else %}
+                                {{ item.product.produkNama }}
+                                {% endif %}
+                            </strong>
+                        </td>
+                        <td class="text-end">{{ item.product.produkHarga | idr }}</td>
+                        <td class="text-center">{{ item.quantity }}</td>
+                        <td class="text-end">{{ (item.product.produkHarga * item.quantity) | idr }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Total Harga -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5>Total Harga</h5>
+                </div>
+                <div class="col-md-6 text-end">
+                    <h5>{{ total_harga | idr }}</h5>
+                </div>
+            </div>
+
+            <!-- PPN dan Ongkir -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <p><strong>PPN (11%):</strong></p>
+                    <p><strong>Ongkir:</strong></p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p>{{ transaction.vat | idr }}</p>
+                    <p>{{ transaction.shipping_cost | idr }}</p>
+                </div>
+            </div>
+
+            <!-- Grand Total -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h4 class="font-weight-bold">Total Bayar:</h4>
+                </div>
+                <div class="col-md-6 text-end">
+                    <h4 class="font-weight-bold text-success">{{ transaction.grand_total | idr }}</h4>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Footer -->
-    <div class="mt-4 text-center small">
-        <p>Langgeng Catering</p>
-        <p>Jl.DR . Setia Budi No 38 Kembang Baru RT 002/RW001<br> Kec. Brebes, Kabupaten Brebes,
-            Jawa Tengah 52212
-        </p>
+    
+    <!-- Tombol Kembali dan Download PDF -->
+    <div class="d-flex justify-content-end mx-2 mt-4">
+        <a href="{{ url_for('main.order') }}" class="btn btn-secondary me-2">Kembali</a>
+        <!-- <form action="{{ url_for('main.download_pdf', transaction_id=transaction.transaction_id) }}" method="POST">
+            
+            <button type="submit">Download PDF</button>
+        </form>
+        <a href="#" class="btn btn-success">Download PDF</a> Tautkan ke fungsi untuk mendownload PDF -->
     </div>
-
-</body>
+</div>
+{% endblock %}

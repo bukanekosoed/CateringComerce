@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template,request,redirect,flash,url_for,session,jsonify,make_response,abort
+from flask import Blueprint, render_template,request,redirect,flash,url_for,session,jsonify,send_file,abort
 import requests
 import random
 from .models import (Kategori,Produk, get_products_by_category, 
@@ -13,6 +13,7 @@ import midtransclient
 from dotenv import load_dotenv
 import os
 from bson import ObjectId
+import tempfile
 from mongoengine import DoesNotExist
 from datetime import datetime, timedelta
 import pytz
@@ -54,6 +55,7 @@ def inject_cart_count():
         'cart_count': cart_count,
         'cart_items': cart_items  # Mengembalikan item cart
     }
+
 @user_bp.context_processor
 def inject_notifications():
     unread_notifications_count = 0
@@ -72,11 +74,27 @@ def inject_notifications():
         'notifications': unread_notifications  # Mengembalikan notifikasi yang belum dibaca
     }
 
+def to_roman(n):
+    if n == 0:
+        return "0"  # Menampilkan "0" untuk angka 0
+    roman_numerals = {
+    5000: 'ↁ', 1000: 'M', 900: 'CM', 500: 'D', 400: 'CD', 
+    100: 'C', 90: 'XC', 50: 'L', 40: 'XL', 10: 'X', 9: 'IX', 
+    5: 'V', 4: 'IV', 1: 'I'
+    }
+    result = ''
+    for value, numeral in roman_numerals.items():
+        while n >= value:
+            result += numeral
+            n -= value
+    return result
 
+
+# Beranda
 @user_bp.route('/')
 @user_required
 def index():
-    produk_list = list(Produk.objects.aggregate([{'$sample': {'size': 4}}]))
+    produk_list = list(Produk.objects.aggregate([{'$sample': {'size': 6}}]))
     
     for item in produk_list:
         item['id'] = str(item['_id'])
@@ -85,10 +103,8 @@ def index():
     return render_template('user/index.html', kategoris = Kategori.objects.all(),
                            produk = produk_list,page='produk')
 
-
-
-   
-@user_bp.route('/shop')
+# Produk
+@user_bp.route('/produk')
 @user_required
 def shop():
     kategori_id = request.args.get('kategori')  # Ambil parameter kategori dari query string
@@ -129,27 +145,37 @@ def shop():
     )
 
 
-
-
-@user_bp.route('/add-to-cart', methods=['POST'])
+# Tambah Keranjang
+@user_bp.route('/tambah-keranjang', methods=['POST'])
 @login_required
 def add_to_cart():
     product_id = request.form.get('product_id')
-    quantity = int(request.form.get('quantity'))
+    quantity = request.form.get('quantity')
     variant = request.form.get('variant')
     user_id = session.get('user_id')
+
+    # Validasi kuantitas
+    try:
+        quantity = int(quantity)
+        if quantity <= 0:
+            raise ValueError("Quantity must be greater than 0")
+    except (ValueError, TypeError):
+        flash('Kuantitas tidak valid. Harap masukkan angka yang benar.', 'danger')
+        return redirect(request.referrer or url_for('main.index'))
+
     # Fetch the product
     product = Produk.objects(id=product_id).first()
     user = Users.objects(id=user_id).first()
+
     if not product:
+        flash('Produk tidak ditemukan.', 'danger')
         return redirect(url_for('main.not_found'))  # Redirect to a not found page or handle error
 
     # Fetch or create the user's cart
-    user_cart = Cart.objects(user=user).first()  # Adjust this to get the current user's cart
+    user_cart = Cart.objects(user=user).first()
     if not user_cart:
         user_cart = Cart(user=user, items=[])
 
-    
     # Create or update cart item
     existing_item = next((item for item in user_cart.items if item.product == product and item.variant == variant), None)
     if existing_item:
@@ -158,15 +184,22 @@ def add_to_cart():
         new_item = CartItem(product=product, quantity=quantity, variant=variant)
         user_cart.items.append(new_item)
 
+    # Save the updated cart
     user_cart.save()
+
+    # Flash a message based on the variant
     if variant:
-        flash(f'{product.produkNama} with variant "{variant}" successfully added to cart!', 'primary')
+        flash(f'{product.produkNama} dengan varian "{variant}" berhasil ditambahkan ke keranjang dengan jumlah {quantity}.', 'primary')
     else:
-        flash(f'{product.produkNama} successfully added to cart!', 'primary')
+        flash(f'{product.produkNama} berhasil ditambahkan ke keranjang dengan jumlah {quantity}.', 'primary')
+
+    # Redirect to the next page, or back to the previous page, or to the home page
     next_url = request.args.get('next')
     return redirect(next_url or request.referrer or url_for('main.index'))
 
-@user_bp.route('/cart', methods=['GET', 'POST'])
+
+# Keranjang
+@user_bp.route('/keranjang', methods=['GET', 'POST'])
 @login_required
 def cart():
     user_id = session.get('user_id')
@@ -190,7 +223,7 @@ def cart():
                            shipping_cost=shipping_cost,addresses=addresses,client_key=client_key
                            )
 
-
+# Pilih Pengiriman
 @user_bp.route('/update_delivery_option', methods=['POST'])
 @login_required
 def update_delivery_option():
@@ -201,72 +234,54 @@ def update_delivery_option():
     user_id = session.get('user_id')
     user = Users.objects(id=user_id).first()
 
-    # Validate and parse address_index
-    if not address_index_str or not address_index_str.isdigit():
-        return jsonify({'error': 'Invalid address index'}), 400
-
-    address_index = int(address_index_str)
-
-    if delivery_option == 'delivery':
-        if address_index is not None:
-            if not user:
-                return jsonify({'error': 'User not found'}), 404
-
-            addresses = user.addresses
-
-            if address_index < 0 or address_index >= len(addresses):
-                return jsonify({'error': 'Address index out of range'}), 404
-
-            address = addresses[address_index]
-
-            # Calculate distance using OSRM API
-            osrm_url = f'http://router.project-osrm.org/route/v1/driving/{STORE_LONGITUDE},{STORE_LATITUDE};{address.longitude},{address.latitude}'
-
-            # Function to get route with retries
-            def get_route(osrm_url):
-                for attempt in range(3):  # Retry up to 3 times
-                    try:
-                        response = requests.get(osrm_url)
-                        response.raise_for_status()  # Raise an error for bad responses
-                        return response.json()
-                    except (requests.exceptions.RequestException, ValueError) as e:
-                        print(f"Attempt {attempt + 1} failed: {e}")
-                        
-                return None  # Return None if all attempts fail
-
-            data = get_route(osrm_url)
-
-            if data is None or 'routes' not in data or not data['routes']:
-                return jsonify({'error': 'Failed to calculate distance or no route found'}), 500
-
-            distance = data['routes'][0]['distance'] / 1000  # Convert meters to kilometers
-            shipping_cost = BASE_FARE + (COST_PER_KM * distance)  # Total cost
-            shipping_cost = round(shipping_cost, -2)
-            print(f"Distance: {distance:.2f} km")
-        else:
-            return jsonify({'error': 'Address index is required for delivery'}), 400
-    elif delivery_option == 'pickup':
-        shipping_cost = 0  # No cost for pickup
-    else:
-        return jsonify({'error': 'Invalid delivery option'}), 400
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
 
     user_cart = Cart.objects(user=user).first()
-
     if not user_cart:
         return jsonify({'error': 'Cart not found'}), 404
+
+    # Default shipping cost
+    shipping_cost = 0  
+
+    # Delivery logic
+    if delivery_option == 'delivery':
+        if not address_index_str or not address_index_str.isdigit():
+            return jsonify({'error': 'Invalid address index'}), 400
+
+        address_index = int(address_index_str)
+        if address_index < 0 or address_index >= len(user.addresses):
+            return jsonify({'error': 'Address index out of range'}), 404
+
+        address = user.addresses[address_index]
+        osrm_url = f'http://router.project-osrm.org/route/v1/driving/{STORE_LONGITUDE},{STORE_LATITUDE};{address.longitude},{address.latitude}'
+
+        try:
+            response = requests.get(osrm_url).json()
+            distance = response['routes'][0]['distance'] / 1000  # Convert meters to kilometers
+            shipping_cost = BASE_FARE + round(COST_PER_KM * distance, -2)
+        except:
+            return jsonify({'error': 'Failed to calculate shipping cost'}), 500
+
+    elif delivery_option != 'pickup':
+        return jsonify({'error': 'Invalid delivery option'}), 400
 
     # Calculate totals
     cart_total = sum(item.product.produkHarga * item.quantity for item in user_cart.items)
     vat = cart_total * 0.11
     grand_total = cart_total + vat + shipping_cost
 
+    # Response for frontend
     return jsonify({
         'success': True,
         'shipping_cost': shipping_cost,
+        'cart_total': cart_total,
+        'vat': vat,
         'grand_total': grand_total,
     })
 
-@user_bp.route('/profile', methods=['GET', 'POST'])
+# Akun Saya
+@user_bp.route('/akun', methods=['GET', 'POST'])
 @login_required
 def profile():
     user_id = session.get('user_id')
@@ -293,6 +308,7 @@ def profile():
     
     return render_template('user/profile.html',user=user)
 
+# Hapus Keranjang
 @user_bp.route('/cart/delete/<product_id>', methods=['POST'])
 @login_required
 def cart_delete(product_id):
@@ -300,31 +316,27 @@ def cart_delete(product_id):
 
     user = Users.objects(id=user_id).first()
     user_cart = Cart.objects(user=user).first()
-    
-    print(f"User cart: {user_cart}")  # Debugging
 
     if not user_cart:
-        flash('Cart not found.', 'error')
-        return redirect(url_for('main.cart'))
+        return jsonify({'error': 'Cart not found'}), 404
+
+    variant = request.form.get('variant')  # Get variant from form data
 
     item_to_delete = None
     for item in user_cart.items:
-        if str(item.product.id) == product_id:
+        if str(item.product.id) == product_id and (item.variant == variant or not item.variant):
+            # Match product_id and either the variant or no variant
             item_to_delete = item
             break
-    
-    print(f"Item to delete: {item_to_delete}")  # Debugging
 
     if item_to_delete:
         user_cart.items.remove(item_to_delete)
         user_cart.save()
-        flash('Item berhasil dihapus dari keranjang.', 'primary')
+        return jsonify({'success': True})
     else:
-        flash('Item tidak ditemukan dalam keranjang.', 'danger')
+        return jsonify({'error': 'Item not found in cart'}), 404
 
-    return redirect(url_for('main.cart'))
-
-
+# Tambah Jumlah Items
 @user_bp.route('/update_quantity/<product_id>', methods=['POST'])
 @login_required
 def update_quantity(product_id):
@@ -341,40 +353,44 @@ def update_quantity(product_id):
         return jsonify({'error': 'Cart not found'}), 404
 
     action = request.form.get('action')
+    variant = request.form.get('variant')  # Capture variant from the form
 
-    # Find the item in the cart
-    cart_item = next((item for item in user_cart.items if str(item.product.id) == product_id), None)
+    # Validate product_id to ObjectId
+    try:
+        product_id = ObjectId(product_id)
+    except:
+        return jsonify({'error': 'Invalid product ID'}), 400
+
+    # Search for the item by product_id and variant (if variant is provided)
+    if variant:
+        cart_item = next((item for item in user_cart.items if str(item.product.id) == str(product_id) and item.variant == variant), None)
+    else:
+        # If no variant is provided, search only by product_id
+        cart_item = next((item for item in user_cart.items if str(item.product.id) == str(product_id) and item.variant is None), None)
 
     if not cart_item:
         return jsonify({'error': 'Cart item not found'}), 404
 
+    # Handle the action (increment, decrement, update)
     if action == 'increment':
         cart_item.quantity += 1
     elif action == 'decrement' and cart_item.quantity > cart_item.product.minPembelian:
         cart_item.quantity -= 1
     elif action == 'update':
         new_quantity = request.form.get('quantity')
-        if new_quantity.isdigit():
-            new_quantity = int(new_quantity)
-            if new_quantity >= cart_item.product.minPembelian:
-                cart_item.quantity = new_quantity
+        if new_quantity.isdigit() and int(new_quantity) >= cart_item.product.minPembelian:
+            cart_item.quantity = int(new_quantity)
+        else:
+            return jsonify({'error': f'Minimum quantity is {cart_item.product.minPembelian}'}), 400
 
+    # Save the updated cart
     user_cart.save()
 
-    # Respond with the updated quantity and total
-    total_price = sum(item.quantity * item.product.produkHarga for item in user_cart.items)
+    # Return success for reload section and updated cart item count
+    cart_item_count = sum(item.quantity for item in user_cart.items)
+    return jsonify({'success': True, 'cart_item_count': cart_item_count})
 
-    return jsonify({
-        'quantity': cart_item.quantity,
-        'total_price': total_price,
-        'total_items': len(user_cart.items),
-        'grand_total': total_price + (total_price * 0.11),  # Including VAT
-        'ppn_cost': total_price * 0.11,  # VAT cost,
-        'total_cost': cart_item.quantity * cart_item.product.produkHarga
-        
-    })
-
-
+# Simpan Alamat
 @user_bp.route('/save_address', methods=['POST'])
 @login_required
 def save_address():
@@ -433,7 +449,7 @@ def save_address():
 
     return redirect(next_url)
 
-
+# Hapus Alamat
 @user_bp.route('/delete_address/<int:address_index>', methods=['POST'])
 @login_required
 def delete_address(address_index):
@@ -458,79 +474,7 @@ def delete_address(address_index):
     flash(f'Alamat "{address_type}" berhasil dihapus.', 'primary')
     return redirect(next_url)
 
-@user_bp.route('/update_address', methods=['POST'])
-@login_required
-def update_address():
-    user_id = session.get('user_id')
-    next_url = request.args.get('next_url', url_for('main.cart'))  # Default redirect jika next_url tidak ada
-    
-    address_id = request.form.get('address_id')
-    address_type = request.form.get('address_type')
-    street_name = request.form.get('street_name')
-    rt_rw = request.form.get('rt_rw')
-    village = request.form.get('village')
-    sub_district = request.form.get('sub_district')
-    district = request.form.get('district')
-    latitude = request.form.get('latitude')
-    longitude = request.form.get('longitude')
-
-    # Validate latitude and longitude
-    try:
-        latitude = float(latitude)
-        longitude = float(longitude)
-    except ValueError:
-        flash('Invalid latitude or longitude value.', 'danger')
-        return redirect(next_url)
-
-    # Check if all fields are filled
-    if not (address_type and street_name and rt_rw and village and sub_district and district and latitude and longitude):
-        flash('Semua kolom harus diisi.', 'danger')
-        return redirect(next_url)
-
-    # Find the address to be updated
-    user = Users.objects(id=user_id).first()
-    if user:
-        address = next((addr for addr in user.addresses if str(addr.id) == address_id), None)
-        if address:
-            # Update address information
-            address.address_type = address_type
-            address.street_name = street_name
-            address.rt_rw = rt_rw
-            address.village = village
-            address.sub_district = sub_district
-            address.district = district
-            address.latitude = latitude
-            address.longitude = longitude
-            address.full_address = f"{street_name}, RT {rt_rw}, {village}, {sub_district}, {district}"
-            address.plus_code = olc.encode(latitude, longitude)
-
-            # Save the updated user data
-            user.save()
-            flash('Alamat berhasil diperbarui.', 'success')
-        else:
-            flash('Alamat tidak ditemukan.', 'danger')
-    else:
-        flash('Pengguna tidak ditemukan.', 'danger')
-
-    return redirect(next_url)
-
-
-    return render_template('edit_address.html', address=address)
-def to_roman(n):
-    if n == 0:
-        return "0"  # Menampilkan "0" untuk angka 0
-    roman_numerals = {
-    5000: 'ↁ', 1000: 'M', 900: 'CM', 500: 'D', 400: 'CD', 
-    100: 'C', 90: 'XC', 50: 'L', 40: 'XL', 10: 'X', 9: 'IX', 
-    5: 'V', 4: 'IV', 1: 'I'
-    }
-    result = ''
-    for value, numeral in roman_numerals.items():
-        while n >= value:
-            result += numeral
-            n -= value
-    return result
-
+# Buat Pesanan
 @user_bp.route('/create-transaction', methods=['POST'])
 @login_required
 def create_transaction():
@@ -631,17 +575,20 @@ def create_transaction():
         'gross_amount': int(grand_total),
     }
 
+
     # Mengumpulkan data items dalam bentuk dictionary
     items = [
         {
             'id': str(item.product.id),  # ID produk
             'price': item.product.produkHarga,  # Harga
             'quantity': item.quantity,  # Jumlah
-            'name': item.product.produkNama,  # Nama produk
-            'category': str(item.product.kategori)  # Kategori
+            'name': f"{item.product.produkNama} - {item.variant}" if item.product.variantsNama else item.product.produkNama,  # Nama produk
+            'category': str(item.product.kategori),  # Kategori produk
+            
         }
         for item in user_cart.items
     ]
+
 
     # Menambahkan Biaya PPN (11%)
     items.append({
@@ -718,9 +665,8 @@ def create_transaction():
         
         return jsonify({'error': 'Failed to create transaction'}), 500
 
-
-
-@user_bp.route('/order')
+# Pesanan
+@user_bp.route('/pesanan')
 def order():
     # Mendapatkan user_id dari session
     user_id = session.get('user_id')
@@ -767,7 +713,7 @@ def order():
 
     return render_template('user/order.html', orders=orders, status=status_filter)
 
-
+# Ambil Token Pembayaran
 @user_bp.route('/payment/get_snap_token/<int:order_id>', methods=['GET'])
 def get_snap_token(order_id):
     # Cari pesanan berdasarkan order_id
@@ -780,6 +726,7 @@ def get_snap_token(order_id):
     else:
         return jsonify({'error': 'Order not found or payment not pending'}), 404
     
+# Webhook Midtrans
 @user_bp.route('/midtrans_webhook', methods=['POST'])
 def midtrans_webhook():
     webhook_data = request.get_json()
@@ -875,72 +822,14 @@ def midtrans_webhook():
     else:
         return jsonify({"error": "Order ID not found in webhook data"}), 400
 
-
-@user_bp.route('/print-pdf/<transaction_id>')
-def print_pdf(transaction_id):
-    # Replace this with your own database query
-    order = Orders.objects(transaction_id=transaction_id).first()  # Fetch single order
-
-    if not order:
-        return "Order not found", 404
-
-    # Process and format delivery_date and transaction_time
-    if isinstance(order.delivery_date, str):
-        delivery_date = datetime.strptime(order.delivery_date, '%Y-%m-%d %H:%M')
-    else:
-        delivery_date = order.delivery_date  # Assume it's already a datetime object
-
-    # Format delivery_date
-    formatted_date = format_datetime(delivery_date, format='EEEE, dd MMMM yyyy HH:mm', locale='id_ID')
-    order.delivery_date = formatted_date
-
-    # Format transaction_time
-    transaction_time = order.transaction_time
-    if isinstance(transaction_time, str):
-        transaction_time = datetime.fromisoformat(transaction_time)  # Convert ISO string to datetime
-
-    # Change timezone from UTC to GMT+7
-    utc_zone = pytz.utc
-    gmt_plus_7 = pytz.timezone('Asia/Jakarta')  # Adjust time zone as needed
-    transaction_time = transaction_time.replace(tzinfo=utc_zone)  # Set timezone UTC
-    transaction_time = transaction_time.astimezone(gmt_plus_7)  # Change to GMT+7
-
-    formatted_transaction_time = format_datetime(transaction_time, format='EEEE, dd MMMM yyyy HH:mm', locale='id_ID')
-    order.transaction_time = formatted_transaction_time
-
-    # Render the HTML template with order data
-    html = render_template('user/invoice.html', order=order)
-
-    # Path to wkhtmltopdf executable
-    wkhtmltopdf_path = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'
-
-    # Configuring pdfkit
-    config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
-    options = {
-        'enable-local-file-access': None,
-        'no-stop-slow-scripts': None,
-        'debug-javascript': None,
-    }
-
-    try:
-        # Generating PDF
-        pdf = pdfkit.from_string(html, False, configuration=config, options=options)
-        response = make_response(pdf)
-        response.headers['Content-Type'] = 'application/pdf'
-        response.headers['Content-Disposition'] = f'attachment; filename=receipt_{transaction_id}.pdf'
-        return response
-    
-    except IOError as e:
-        return f"IOError: {str(e)}", 500
-    except Exception as e:
-        return f"An error occurred: {str(e)}", 500
-    
-@user_bp.route('/news')
+# Berita
+@user_bp.route('/berita')
 def berita():
     news_list = News.objects().order_by('-created_at')
     return render_template('user/berita.html', news_list=news_list)
 
-@user_bp.route('/news/<news_id>')
+# Detail Berita
+@user_bp.route('/berita/<news_id>')
 def detail(news_id):
     # Validasi jika `news_id` adalah ObjectId yang valid
     if not ObjectId.is_valid(news_id):
@@ -966,3 +855,73 @@ def detail(news_id):
         'user/detail_berita.html', 
         news=news, 
         other_news_list=other_news_list)
+
+# Invoice
+@user_bp.route('/invoice/<transaction_id>', methods=['GET'])
+@login_required 
+@user_required
+def view_invoice(transaction_id):
+    user_id = session.get('user_id')
+    transaction = Orders.objects(transaction_id=transaction_id).first()
+
+    if not transaction:
+        return "Transaksi tidak ditemukan", 404
+    if transaction.user.id != ObjectId(user_id):
+            flash('Anda tidak memiliki akses ke invoice ini', 'danger')
+            return redirect(url_for('main.index')) 
+    total_harga = sum(item.product.produkHarga * item.quantity for item in transaction.items)
+
+    return render_template('user/invoice.html', transaction=transaction, total_harga=total_harga)
+
+@user_bp.route('/download-pdf/<transaction_id>', methods=['POST'])
+@login_required
+@user_required
+def download_pdf(transaction_id):
+    user_id = session.get('user_id')
+    transaction = Orders.objects(transaction_id=transaction_id).first()
+
+    if not transaction:
+        return "Transaksi tidak ditemukan", 404
+    if transaction.user.id != ObjectId(user_id):
+        flash('Anda tidak memiliki akses ke invoice ini', 'danger')
+        return redirect(url_for('main.index')) 
+    
+    # Menghitung total harga dari semua item di transaksi
+    total_harga = sum(item.product.produkHarga * item.quantity for item in transaction.items)
+    
+    # Render HTML untuk invoice
+    html_content = render_template('user/invoice.html', transaction=transaction, total_harga=total_harga)
+    
+    # Ambil konten spesifik untuk PDF
+    start_index = html_content.find('<div id="content-pdf">')
+    end_index = html_content.find('</div>', start_index) + len('</div>')
+    specific_content = html_content[start_index:end_index]
+
+
+    try:
+        # Buat PDF dari konten spesifik menggunakan pdfkit
+        config = pdfkit.configuration(wkhtmltopdf=r'C:\path\to\wkhtmltopdf.exe')
+        pdf = pdfkit.from_string(specific_content, False, options={'enable-local-file-access': True}, configuration=config)
+        # pdf = pdfkit.from_string(specific_content, False, options={'enable-local-file-access': True})
+        
+        # Gunakan file sementara untuk menyimpan PDF
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+            # Menulis PDF ke file sementara
+            temp_file.write(pdf)
+            temp_file_path = temp_file.name  # Menyimpan path file sementara
+            
+        # Kirim file PDF sebagai respons ke pengguna untuk diunduh
+        response = send_file(temp_file_path, as_attachment=True)
+        return response
+
+    except Exception as e:
+        # Tangani kesalahan jika PDF tidak dapat dibuat
+        return f"Terjadi kesalahan saat membuat PDF: {str(e)}", 500
+
+    finally:
+        # Hapus file PDF sementara setelah dikirim
+        if os.path.exists(temp_file_path):
+            try:
+                os.remove(temp_file_path)
+            except Exception as e:
+                print(f"Error deleting temp file: {e}")
