@@ -65,35 +65,41 @@ def register():
             return redirect(url_for('auth.register'))
     return render_template('auth/register.html')
 
-@auth_bp.route('/login', methods=['POST','GET'])
+@auth_bp.route('/login', methods=['POST', 'GET'])
 def login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
         
-        # Fetch the user from the database
+        # Ambil user dari database
         user = Users.objects(email=email).first()
         admin = Admin.objects(email=email).first()
         
-        # Check if the user exists and if the password is correct
-        if user and user.check_password(password):
-            session['user_id'] = str(user.id)
-            session['user_role'] = 'user'
-            flash('Login successful!', 'primary')
-            next_url = session.pop('next_url', url_for('main.index'))
-            return redirect(next_url)
-        
-        if admin and admin.check_password(password):
-            session['user_id'] = str(admin.id)
-            session['user_role'] = 'admin'
-            flash('Login successful!', 'success')
-            next_url = session.pop('next_url', url_for('admin.index'))
-            return redirect(next_url)
-        
-        flash('Invalid email or password.', 'danger')
+        # Jika email tidak ditemukan pada user maupun admin
+        if not user and not admin:
+            flash('Email tidak ditemukan. Silakan registrasi terlebih dahulu.', 'warning')
+        else:
+            # Periksa apakah user ada dan password benar
+            if user and user.check_password(password):
+                session['user_id'] = str(user.id)
+                session['user_role'] = 'user'
+                flash('Login berhasil!', 'primary')
+                next_url = session.pop('next_url', url_for('main.index'))
+                return redirect(next_url)
             
-    
+            # Periksa jika admin ada dan password benar
+            if admin and admin.check_password(password):
+                session['user_id'] = str(admin.id)
+                session['user_role'] = 'admin'
+                flash('Login berhasil!', 'success')
+                next_url = session.pop('next_url', url_for('admin.index'))
+                return redirect(next_url)
+            
+            # Jika password salah
+            flash('Email atau password salah.', 'danger')
+            
     return render_template('auth/login.html')
+
 
 
 

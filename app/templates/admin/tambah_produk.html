@@ -18,7 +18,8 @@
                     <div class="card-body">
                         <div class="mb-3">
                             <input type="text" class="form-control" id="ecommerce-product-name" placeholder="Nama Menu"
-                                name="productTitle" aria-label="Product title" required>
+                                name="productTitle" aria-label="Product title" value="{{ old_data['productTitle']}}"
+                                required>
                         </div>
                     </div>
                 </div>
@@ -33,6 +34,12 @@
                         <div class="input-group">
                             <input type="file" class="form-control" id="inputGroupFile04"
                                 aria-describedby="inputGroupFileAddon04" aria-label="Upload" name="productImg" required>
+
+                            {% if old_image %}
+                            <h2>Gambar Lama:</h2>
+                            <img src="data:image/jpeg;base64,{{ old_image|b64encode }}" alt="Gambar Produk Lama">
+                            {% endif %}
+
                         </div>
                     </div>
                 </div>
@@ -48,7 +55,8 @@
                             <div class="input-group mb-3">
                                 <span class="input-group-text">Rp</span>
                                 <input type="number" name="productPrice" class="form-control"
-                                    aria-label="Amount (to the nearest dollar)" placeholder="1000" required>
+                                    aria-label="Amount (to the nearest dollar)" placeholder="1000"
+                                    value="{{ old_data['productPrice']}}" required>
                             </div>
                         </div>
                     </div>
@@ -61,7 +69,8 @@
                     </div>
                     <div class="card-body">
                         <input type="number" class="form-control" id="ecommerce-product-name" placeholder="Minimal"
-                            name="minPembelian" aria-label="Product title" required>
+                            name="minPembelian" aria-label="Product title" required
+                            value="{{ old_data['minPembelian']}}">
                     </div>
                 </div>
                 <!-- /Pembelian -->
@@ -71,26 +80,36 @@
                 <!-- Variants -->
                 <div class="card mb-3">
                     <div class="card-header">
-                        <h5 class="card-title">Varian Menu</h5>
+                        <h5 class="card-title">Varian Menu <span><small>(Opsional)</small></span></h5>
                     </div>
                     <div class="card-body">
                         <div id="variant-container">
+                            {% for variant in old_data['variant_name'] or [] %}
                             <div class="row mb-3 variant-row">
                                 <div class="col-8">
-                                    <input type="text" id="form-repeater-1-2" class="form-control" name="variant_name[]"
-                                        placeholder="Masukan Varian Menu">
+                                    <input type="text" class="form-control" name="variant_name[]"
+                                        placeholder="Masukan Varian Menu" value="{{ variant }}">
                                 </div>
                                 <div class="col-4">
-                                    <button type="button" class="btn btn-primary add-variant">
-                                        <i class="bx bx-plus bx-sm"></i>
-                                        <span class="d-none d-sm-inline">Varian</span>
+                                    <button type="button" class="btn btn-danger remove-variant">
+                                        <i class="bx bx-minus bx-sm"></i>
+                                        <span class="d-none d-sm-inline">Hapus</span>
                                     </button>
                                 </div>
                             </div>
+                            {% endfor %}
                         </div>
+
+                        <!-- Tombol untuk menambah varian baru -->
+                        <button type="button" class="btn btn-primary add-variant">
+                            <i class="bx bx-plus bx-sm"></i>
+                            <span class="d-none d-sm-inline">Varian</span>
+                        </button>
                     </div>
                 </div>
                 <!-- /Variants -->
+
+
 
                 <!-- Kategori -->
                 <div class="card">
@@ -105,15 +124,20 @@
                         <div class="input-group mb-3">
                             <label class="input-group-text" for="inputGroupSelect01">Options</label>
                             <select class="form-select" id="inputGroupSelect01" name="productCategory" required>
-                                <option selected disabled value>Choose...</option>
+                                <option selected disabled value="">Pilih Kategori</option>
                                 {% for kategori in kategoris %}
-                                <option value="{{ kategori.id }}">{{ kategori.kategoriNama }}</option>
+                                <option value="{{ kategori.id }}" {% if old_data.productCategory==kategori.id|string %}
+                                    selected {% endif %}> <!-- Perbandingan menggunakan string -->
+                                    {{ kategori.kategoriNama }}
+                                </option>
                                 {% endfor %}
                             </select>
+
                         </div>
                     </div>
                 </div>
                 <!-- /Kategori -->
+
             </div>
         </div>
         <button type="submit" class="btn btn-primary ms-auto">
@@ -121,7 +145,7 @@
             Simpan Menu
         </button>
     </form>
-    
+
 </div>
 
 <!-- Modal untuk Tambah Kategori -->
@@ -157,26 +181,30 @@
 <!-- /Modal untuk Tambah Kategori -->
 
 <script>
-    document.querySelector('.add-variant').addEventListener('click', function () {
-        const variantContainer = document.getElementById('variant-container');
-        const newVariantRow = document.createElement('div');
-        newVariantRow.className = 'row mb-3 variant-row';
-        newVariantRow.innerHTML = `
-            <div class="col-8">
-                <input type="text" class="form-control" name="variant_name[]" placeholder="Masukan Varian Menu">
-            </div>
-            <div class="col-4">
-                <button type="button" class="btn btn-danger remove-variant">
-                    <i class="bx bx-minus bx-sm"></i>
-                    <span class="d-none d-sm-inline">Varian</span> 
-                </button>
-            </div>
-        `;
-        variantContainer.appendChild(newVariantRow);
 
-        // Event Listener untuk tombol "Hapus Varian"
-        newVariantRow.querySelector('.remove-variant').addEventListener('click', function () {
-            variantContainer.removeChild(newVariantRow);
+    $(document).ready(function () {
+        // Menangani tombol tambah varian (+)
+        $('.add-variant').on('click', function () {
+            const variantRow = `
+                <div class="row mb-3 variant-row">
+                    <div class="col-8">
+                        <input type="text" class="form-control" name="variant_name[]" placeholder="Masukan Varian Menu">
+                    </div>
+                    <div class="col-4">
+                        <button type="button" class="btn btn-danger remove-variant">
+                            <i class="bx bx-minus bx-sm"></i>
+                            <span class="d-none d-sm-inline">Hapus</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            $('#variant-container').append(variantRow);
+        });
+
+        // Menangani tombol hapus varian (-)
+        $('#variant-container').on('click', '.remove-variant', function () {
+            // Menghapus baris varian yang diklik
+            $(this).closest('.variant-row').remove();
         });
     });
 </script>

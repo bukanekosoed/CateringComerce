@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template,request, redirect,jsonify,flash,url_for,abort,make_response, send_file
+from flask import Blueprint, render_template,request, redirect,jsonify,flash,url_for,abort,session, send_file
+import gridfs
 from .models import Kategori,Produk,Orders,Users,Notification,News
 from mongoengine.errors import NotUniqueError,ValidationError
 from werkzeug.utils import secure_filename
@@ -91,59 +92,108 @@ def produk():
         category_filter=category_filter
     )
     
-
-    return render_template('admin/produk.html',
-                           produk=paginated_produks,
-                           total_produks=total_produks,
-                           page=page, per_page=per_page,
-                           kategoris = Kategori.objects.all())
-
-@admin_bp.route('/produk/tambah-produk' , methods = ['GET', 'POST'])
+@admin_bp.route('/produk/tambah-produk', methods=['GET', 'POST'])
 def tambah_produk():
     if request.method == 'POST':
         nama = request.form['productTitle']
-        # deskripsi = request.form['productDesc']
         gambar = request.files['productImg']
         harga = int(request.form['productPrice'])
         minPembelian = int(request.form['minPembelian'])
         kategori = request.form['productCategory']
-        variants = [variant for variant in request.form.getlist('variant_name[]') if variant.strip()]
+        variants = [variant.strip() for variant in request.form.getlist('variant_name[]') if variant.strip()]
 
+        old_data = {
+            'productTitle': nama,
+            'productPrice': harga,
+            'minPembelian': minPembelian,
+            'productCategory': kategori,
+            'variant_name': variants
+        }
+
+        # Validasi harga dan kuantitas
+        if harga <= 0:
+            flash('Harga produk tidak boleh kurang dari atau sama dengan 0.', 'danger')
+            session['old_data'] = old_data
+            session['old_image_id'] = session.get('old_image_id', None)  # Simpan gambar lama ke session
+            return redirect(url_for('admin.tambah_produk'))
+
+        if minPembelian < 1:
+            flash('Kuantitas minimal adalah 1.', 'danger')
+            session['old_data'] = old_data
+            session['old_image_id'] = session.get('old_image_id', None)  # Simpan gambar lama ke session
+            return redirect(url_for('admin.tambah_produk'))
+
+        # Validasi apakah produk sudah ada
         existing_product = Produk.objects(produkNama=nama).first()
         if existing_product:
             flash('Nama produk sudah ada, gunakan nama lain.', 'danger')
+            session['old_data'] = old_data
+            session['old_image_id'] = session.get('old_image_id', None)  # Simpan gambar lama ke session
             return redirect(url_for('admin.tambah_produk'))
-        
+
+        # Menyimpan produk baru
         product = Produk(
             produkNama=nama,
-            minPembelian = minPembelian,
+            minPembelian=minPembelian,
             kategori=kategori,
             produkHarga=harga,
             variantsNama=variants
         )
-        
         product.save()
-        
+
+        # Menyimpan gambar produk jika ada
         if gambar:
             filename = secure_filename(gambar.filename)
-            product.produkGambar.put(gambar, content_type=gambar.content_type)
+            fs = gridfs.GridFS(product.db)  # Menggunakan GridFS pada database produk yang digunakan
+            file_id = fs.put(gambar, filename=filename, content_type=gambar.content_type)  # Menyimpan gambar
+
+            # Menyimpan ID gambar ke field produkGambar
+            product.produkGambar = file_id
             product.save()
+
+            # Menyimpan ID gambar dalam session untuk old image
+            session['old_image_id'] = product.produkGambar
+
         flash('Produk berhasil ditambahkan!', 'success')
+        session.pop('old_data', None)  # Hapus old_data setelah berhasil
+        session.pop('old_image_id', None)  # Hapus old_image_id setelah berhasil
         return redirect(url_for('admin.produk'))
-        
+
+    # Jika tidak ada data lama, ambil old_data dan old_image_id dari session
+    old_data = session.get('old_data', None)
+    old_image_id = session.get('old_image_id', None)
 
     return render_template('admin/tambah_produk.html',
-                           kategoris = Kategori.objects.all())
+                           kategoris=Kategori.objects.all(),
+                           old_data=old_data,
+                           old_image_id=old_image_id)
+
 
 
 @admin_bp.route('/produk/edit/<produk_id>', methods=['POST'])
 def edit_produk(produk_id):
-    produk = Produk.objects.get(id=produk_id)
+    try:
+        produk = Produk.objects.get(id=produk_id)
+    except Produk.DoesNotExist:
+        flash('Produk tidak ditemukan.', 'danger')
+        return redirect(url_for('admin.produk'))
+
     produk.produkNama = request.form.get('produkNama', produk.produkNama)
-    produk.produkHarga = request.form.get('produkHarga', produk.produkHarga)
-    produk.minPembelian = request.form.get('minPembelian', produk.minPembelian)
+    produk.produkHarga = float(request.form.get('produkHarga', produk.produkHarga))
+    produk.minPembelian = int(request.form.get('minPembelian', produk.minPembelian))
     produk.kategori = Kategori.objects.get(id=request.form.get('productCategory'))
     produk.variantsNama  = [variant for variant in request.form.getlist('variant_name[]') if variant.strip()]
+
+    # Validating the input
+    if produk.produkHarga <= 0:
+        flash('Harga produk tidak boleh kurang dari atau sama dengan 0.', 'danger')
+        return redirect(url_for('admin.produk', produk_id=produk_id))
+
+    if produk.minPembelian < 1:
+        flash('Kuantitas minimal adalah 1.', 'danger')
+        return redirect(url_for('admin.produk', produk_id=produk_id))
+
+    # Handling image upload
     if 'productImg' in request.files:
         produkGambar = request.files['productImg']
         if produkGambar and produkGambar.filename != '':
@@ -165,8 +215,10 @@ def edit_produk(produk_id):
         flash("Produk berhasil diperbarui!", "success")
     except (NotUniqueError, ValidationError):
         flash("Nama produk sudah ada, gunakan nama lain.", "danger")
-        return redirect(url_for('admin.produk'))
+        return redirect(url_for('admin.edit_produk', produk_id=produk_id))
+
     return redirect(url_for('admin.produk'))
+
 
 @admin_bp.route('/produk/delete/<produk_id>', methods=['POST'])
 def delete_produk(produk_id):

@@ -152,30 +152,36 @@
                                 <div class="mb-3">
                                     <label for="street_name" class="form-label">Nama Jalan</label>
                                     <input type="text" class="form-control" id="street_name" name="street_name"
-                                        placeholder="Nama Jalan" required>
+                                        placeholder="Nama Jalan" pattern="[A-Za-z0-9\s,.'-]{3,}"
+                                        title="Alamat jalan hanya boleh mengandung huruf, angka, dan simbol seperti , . ' -"
+                                        required>
                                 </div>
                                 <div class="row g-3">
                                     <div class="col-md-6 mb-3">
                                         <label for="rt_rw" class="form-label">RT/RW</label>
                                         <input type="text" class="form-control" id="rt_rw" name="rt_rw"
-                                            placeholder="RT/RW" required>
+                                            placeholder="RT/RW" pattern="^\d{1,3}/\d{1,3}$"
+                                            title="Masukkan RT/RW dengan format: RT/RW (contoh: 01/02)" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="village" class="form-label">Desa/Kelurahan</label>
                                         <input type="text" class="form-control" id="village" name="village"
-                                            placeholder="Desa/Kelurahan" required>
+                                            placeholder="Desa/Kelurahan" pattern="[A-Za-z\s]{3,}"
+                                            title="Desa/Kelurahan hanya boleh mengandung huruf dan spasi" required>
                                     </div>
                                 </div>
                                 <div class="row g-3">
                                     <div class="col-md-6 mb-3">
                                         <label for="sub_district" class="form-label">Kecamatan</label>
                                         <input type="text" class="form-control" id="sub_district" name="sub_district"
-                                            placeholder="Kecamatan" required>
+                                            placeholder="Kecamatan" pattern="[A-Za-z\s]{3,}"
+                                            title="Kecamatan hanya boleh mengandung huruf dan spasi" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="district" class="form-label">Kabupaten/Kota</label>
                                         <input type="text" class="form-control" id="district" name="district"
-                                            placeholder="Kabupaten/Kota" required>
+                                            placeholder="Kabupaten/Kota" pattern="[A-Za-z\s]{3,}"
+                                            title="Kabupaten/Kota hanya boleh mengandung huruf dan spasi" required>
                                     </div>
                                 </div>
                                 <input type="hidden" id="latitude" name="latitude">
@@ -191,6 +197,7 @@
             </div>
         </div>
     </div>
+
 
 
 

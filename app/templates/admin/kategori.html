@@ -76,13 +76,13 @@
                     <form>
                         <div class="mb-3">
                             <label for="kategoriNama" class="form-label">Nama Kategori</label>
-                            <input type="text" class="form-control" id="kategoriNama" name="kategoriNama"
-                                placeholder="Masukkan nama kategori">
+                            <input type="text" class="form-control" id="kategoriNama" name="kategoriNama" pattern="^(?!\s*$).+" title="Nama kategori tidak boleh kosong atau hanya spasi"
+                                placeholder="Masukkan nama kategori" required>
                         </div>
                         <div class="mb-3">
                             <label for="kategoriGambar" class="form-label">Gambar</label>
                             <input type="file" class="form-control" id="kategoriGambar" name="kategoriGambar"
-                                aria-describedby="inputGroupFileAddon04" aria-label="Upload">
+                                aria-describedby="inputGroupFileAddon04" aria-label="Upload" required>
                         </div>
                     </form>
                 </div>
@@ -110,7 +110,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="editKategoriNama" class="form-label">Nama Kategori</label>
-                        <input type="text" class="form-control" id="editKategoriNama" name="kategoriNama"
+                        <input type="text" class="form-control" id="editKategoriNama" name="kategoriNama" pattern="^(?!\s*$).+" title="Nama kategori tidak boleh kosong atau hanya spasi"
                             value="{{ kategori.kategori.kategoriNama }}">
                     </div>
                     <div class="mb-3">

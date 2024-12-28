@@ -325,6 +325,16 @@ $(document).ready(function () {
 
   let marker;
 
+  // Store address coordinates (change to your actual store location)
+  const storeLat = -6.876916;  // Replace with your store latitude
+  const storeLng = 109.047849; // Replace with your store longitude
+
+  
+  // Add a marker for the store location with the custom icon
+  const storeMarker = L.marker([storeLat, storeLng]).addTo(map)
+    .bindPopup('Lokasi Toko Kami')
+    .openPopup();
+
   // Function to get current location
   function getLocation() {
     if (navigator.geolocation) {
@@ -458,6 +468,13 @@ $(document).ready(function () {
     getLocation();
   });
 
+
+  // Event listener to initialize map when modal is shown
+  document.getElementById('addAddressModal').addEventListener('shown.bs.modal', function () {
+    map.invalidateSize();
+    getLocation();
+  });
+
   // Mendapatkan tanggal saat ini dan menambahkan 3 hari
   const today = new Date();
   today.setDate(today.getDate() + 3); // Tambahkan 3 hari dari hari ini
@@ -500,7 +517,7 @@ $(document).ready(function () {
 
   // Validasi waktu pengiriman
   $deliveryTimeInput.on('blur change', function () {
-    
+
     checkDateAndTime();
   });
 
@@ -510,7 +527,7 @@ $(document).ready(function () {
     const selectedTime = $deliveryTimeInput.val();
     const [hours, minutes] = selectedTime.split(':').map(Number);
 
-   
+
     const validTime = (hours >= 6 && hours < 20) || (hours === 20 && minutes === 0);
     if (selectedDate && selectedTime && validTime) {
       // Jika keduanya valid, aktifkan tombol checkout
@@ -520,8 +537,8 @@ $(document).ready(function () {
       $checkoutButton.prop('disabled', true);
       if (selectedTime && !validTime) {
         alert("Waktu pengiriman harus antara 06:00 dan 20:00.");
-        $deliveryTimeInput.val(''); 
-        
+        $deliveryTimeInput.val('');
+
       }
     }
   }

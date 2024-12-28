@@ -40,56 +40,75 @@
                             <label for="name" class="form-label">Nama Lengkap</label>
                             <input type="text" class="form-control shadow-sm" id="name" name="name"
                                 value="{{ user.name }}">
+                            <!-- Hint untuk nama -->
+                            <small id="nameHelp" class="form-text text-danger" style="display:none;">
+                                Nama hanya boleh mengandung huruf dan spasi.
+                            </small>
                         </div>
                         <div class="mb-3">
                             <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control shadow-sm" id="email" name="email"
+                            <input type="email" class="form-control shadow-sm" id="inputEmail" name="email"
                                 value="{{ user.email }}">
+                            <!-- Hint untuk email -->
+                            <small id="emailHelp" class="form-text text-danger" style="display:none;">
+                                Email tidak valid.
+                            </small>
                         </div>
                         <div class="mb-3">
                             <label for="phone" class="form-label">Telepon</label>
-                            <input type="text" class="form-control shadow-sm" id="phone" name="phone"
+                            <input type="text" class="form-control shadow-sm" minlength="11" maxlength="14" id="inputPhone" name="phone"
                                 value="{{ user.phone }}">
+                            <!-- Hint untuk telepon -->
+                            <small id="phoneHelpStart" class="form-text text-danger" style="display:none;">
+                                Nomor telepon harus dimulai dengan '08'.
+                            </small>
+                            <small id="phoneHelpLength" class="form-text text-danger" style="display:none;">
+                                Nomor telepon harus memiliki panjang antara 11 hingga 14 karakter.
+                            </small>
                         </div>
                         <button type="submit" class="btn btn-primary rounded-pill px-4 w-auto">Simpan Perubahan</button>
                     </form>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Alamat Tersimpan -->
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card shadow-lg border-0 rounded-3">
-                <!-- Header yang diperbaiki -->
-                <div class="card-header bg-primary text-white py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Alamat Tersimpan</h5>
-                    <button class="btn btn-success rounded-pill btn-sm" data-bs-toggle="modal" data-bs-target="#addAddressModal">
-                        <i class="bx bx-plus-circle"></i> Tambah Alamat
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div class="list-group">
-                        {% for address in user.addresses %}
-                        <div class="list-group-item d-flex justify-content-between align-items-center border-0 bg-light rounded mb-2">
-                            <div>
-                                <h6 class="mb-1">{{ address.address_type }}</h6>
-                                <p class="mb-0 text-muted">{{ address.full_address }}</p>
+        <!-- Alamat Tersimpan -->
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div class="card shadow-lg border-0 rounded-3">
+                    <!-- Header yang diperbaiki -->
+                    <div
+                        class="card-header bg-primary text-white py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Alamat Tersimpan</h5>
+                        <button class="btn btn-success rounded-pill btn-sm" data-bs-toggle="modal"
+                            data-bs-target="#addAddressModal">
+                            <i class="bx bx-plus-circle"></i> Tambah Alamat
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            {% for address in user.addresses %}
+                            <div
+                                class="list-group-item d-flex justify-content-between align-items-center border-0 bg-light rounded mb-2">
+                                <div>
+                                    <h6 class="mb-1">{{ address.address_type }}</h6>
+                                    <p class="mb-0 text-muted">{{ address.full_address }}</p>
+                                </div>
+                                <form
+                                    action="{{ url_for('main.delete_address', address_index=loop.index0, next_url=request.path) }}"
+                                    method="post">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">Hapus</button>
+                                </form>
                             </div>
-                            <form
-                                action="{{ url_for('main.delete_address', address_index=loop.index0, next_url=request.path) }}"
-                                method="post">
-                                <button type="submit" class="btn btn-outline-danger btn-sm">Hapus</button>
-                            </form>
+                            {% else %}
+                            <p class="text-center">Tidak ada alamat tersimpan.</p>
+                            {% endfor %}
                         </div>
-                        {% else %}
-                        <p class="text-center">Tidak ada alamat tersimpan.</p>
-                        {% endfor %}
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 </div>
 
