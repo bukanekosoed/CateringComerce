@@ -1,4 +1,4 @@
-from flask import Flask, render_template, session
+from flask import Flask, render_template
 from config import Config
 from flask_login import LoginManager
 from flask_session import Session
