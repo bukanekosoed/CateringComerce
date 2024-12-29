@@ -7,9 +7,24 @@ auth_bp = Blueprint('auth', __name__)
 # Inisialisasi OAuth
 oauth = OAuth()
 
+def loggedin():
+    if 'user_id' in session:
+        # Cek apakah pengguna adalah admin
+        user_role = session.get('user_role')
+        if user_role == 'admin':
+            flash('Anda sudah login sebagai admin.', 'info')
+            return redirect(url_for('admin.index'))  
+        else:
+            flash('Anda sudah login.', 'info')
+            return redirect(url_for('main.index'))
+    return None
 
 @auth_bp.route('/register', methods=['POST','GET'])
 def register():
+    login = loggedin()
+    if login:
+        return login
+    
     if request.method == 'POST':
         # Retrieve form data
         name = request.form.get('name')
@@ -67,6 +82,18 @@ def register():
 
 @auth_bp.route('/login', methods=['POST', 'GET'])
 def login():
+    login = loggedin()
+    if login:
+        return login
+    if 'user_id' in session:
+        # Cek apakah pengguna adalah admin
+        user_role = session.get('user_role')
+        if user_role == 'admin':
+            flash('Anda sudah login sebagai admin.', 'info')
+            return redirect(url_for('admin.index'))  
+        else:
+            flash('Anda sudah login.', 'info')
+            return redirect(url_for('main.index'))  
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']

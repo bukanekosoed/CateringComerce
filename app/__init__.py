@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template,session,request,redirect,url_for,flash
 from config import Config
 from flask_login import LoginManager
 from flask_session import Session
@@ -78,7 +78,24 @@ def create_app():
     @app.errorhandler(404)
     def page_not_found(e):
         return render_template('404.html'), 404
+    # Fungsi untuk memeriksa login secara global
 
+    @app.before_request
+    def ensure_logged_in():
+        # Mengecek apakah user sudah login
+        # Cek apakah user_id ada di session dan jika request bukan halaman login/register/main
+        if 'user_id' not in session and request.endpoint not in ['auth.login', 'auth.register', 'main.index', 'main.shop', 'main.berita'] and not request.path.startswith('/static/'):
+            flash('User not logged in.', 'warning')
+            return redirect(url_for('main.index'))  # Redirect ke halaman index jika user belum login
+
+    # Fungsi untuk menambahkan header Cache-Control setelah setiap request secara global
+    @app.after_request
+    def set_cache_headers(response):
+        # Set Cache-Control header untuk setiap response di seluruh aplikasi
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, proxy-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
    
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -87,17 +104,5 @@ def create_app():
     app.register_blueprint(image_bp)
     app.register_blueprint(user_bp)
 
-    def create_admin_user():
-        if not Admin.objects(email="admin@admin.com"):
-            admin = Admin(
-                name="Default Admin",
-                email="admin@admin.com"
-            )
-            admin.set_password("admin123@1234")  # Set hashed password
-            admin.save()
-            print("Admin user created: admin@example.com/admin123")
-        else:
-            print("Admin user already exists.")
-
-    create_admin_user()
+    
     return app

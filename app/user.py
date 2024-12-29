@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template,request,redirect,flash,url_for,session,jsonify,send_file,abort
+from flask import Blueprint, render_template,request,redirect,flash,url_for,session,jsonify,send_file,abort,make_response
 import requests
 import random
 from .models import (Kategori,Produk, get_products_by_category, 
@@ -37,6 +37,8 @@ midtrans_client = Snap(
 
 user_bp = Blueprint('main', __name__)
 
+
+
 @user_bp.context_processor
 def inject_cart_count():
     cart_count = 0
@@ -73,6 +75,7 @@ def inject_notifications():
         'unread_count': unread_notifications_count,
         'notifications': unread_notifications  # Mengembalikan notifikasi yang belum dibaca
     }
+
 
 def to_roman(n):
     if n == 0:
@@ -667,6 +670,7 @@ def create_transaction():
 
 # Pesanan
 @user_bp.route('/pesanan')
+@login_required
 def order():
     # Mendapatkan user_id dari session
     user_id = session.get('user_id')
@@ -715,6 +719,7 @@ def order():
 
 # Ambil Token Pembayaran
 @user_bp.route('/payment/get_snap_token/<int:order_id>', methods=['GET'])
+@login_required
 def get_snap_token(order_id):
     # Cari pesanan berdasarkan order_id
     order = Orders.query.get(order_id)
