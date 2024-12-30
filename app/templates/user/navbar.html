@@ -11,7 +11,7 @@
             <a href="{{ url_for('main.shop') }}"
                 class="nav-item nav-link {% if request.endpoint == 'main.shop' %} active {% endif %}">Produk</a>
             <a href="{{ url_for('main.berita') }}"
-                class="nav-item nav-link {% if request.endpoint in ['main.berita', 'main.detail'] %} active {% endif %}">Berita</a>
+                class="nav-item nav-link {% if request.endpoint in ['main.berita', 'main.detail'] %} active {% endif %}">Blog</a>
 
         </div>
 
@@ -189,7 +189,7 @@
             <a href="{{ url_for('main.berita') }}"
                 class="nav-item nav-link d-flex flex-column align-items-center {% if request.endpoint == 'main.berita' %} bg-primary text-white rounded-3 p-2 {% endif %}">
                 <i class="bx bx-news"></i>
-                <small class="ms-2">Berita</small>
+                <small class="ms-2">Blog</small>
             </a>
 
             <!-- Produk -->
