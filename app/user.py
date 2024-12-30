@@ -93,6 +93,19 @@ def to_roman(n):
     return result
 
 
+@user_bp.route('/get-cart-count', methods=['GET'])
+def get_cart_count():
+    cart_count = 0
+    user_id = session.get('user_id')  
+    if user_id:
+        user = Users.objects(id=user_id).first()
+        if user:
+            cart = Cart.objects(user=user).first()
+            if cart:
+                cart_count = len(cart.items)  
+
+    return jsonify({'cart_count': cart_count})
+
 # Beranda
 @user_bp.route('/')
 @user_required
@@ -339,7 +352,6 @@ def cart_delete(product_id):
     else:
         return jsonify({'error': 'Item not found in cart'}), 404
 
-# Tambah Jumlah Items
 @user_bp.route('/update_quantity/<product_id>', methods=['POST'])
 @login_required
 def update_quantity(product_id):
@@ -389,9 +401,12 @@ def update_quantity(product_id):
     # Save the updated cart
     user_cart.save()
 
-    # Return success for reload section and updated cart item count
+    # Menghitung jumlah item dalam keranjang setelah pembaruan
     cart_item_count = sum(item.quantity for item in user_cart.items)
+
+    # Mengembalikan status keberhasilan dan jumlah item yang benar
     return jsonify({'success': True, 'cart_item_count': cart_item_count})
+
 
 # Simpan Alamat
 @user_bp.route('/save_address', methods=['POST'])

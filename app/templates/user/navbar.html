@@ -33,7 +33,7 @@
                     <a href="{{ url_for('main.cart') }}" class="position-relative me-4" id="cartDropdown">
                         <i class='bx bx-cart-alt fs-2'></i>
                         {% if cart_count > 0 %}
-                        <span
+                        <span id="cartCount"
                             class="position-absolute bg-secondary rounded-circle d-flex align-items-center justify-content-center text-dark px-1"
                             style="top: -18px; left: 20px; height: 20px; min-width: 20px;">
                             {{ cart_count }}

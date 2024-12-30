@@ -28,12 +28,17 @@ $(document).ready(function () {
   });
 
   function formatCurrency(value) {
+    
     let formatted = value.toLocaleString("id-ID", {
-      style: "currency",
-      currency: "IDR",
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0,  
+        maximumFractionDigits: 0   
     });
-    return formatted.replace(/,00$/, "");
-  }
+
+    return formatted;
+}
+
 
   $('input[name="delivery_option"]').on("change", function () {
     var deliveryOption = $(this).val();

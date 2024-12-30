@@ -254,16 +254,15 @@ Keranjang
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
 <script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js"
-    data-client-key="{client_key}"></script>
+    data-client-key="{{client_key}}"></script>
 <script>
-    $(document).ready(function () {
-        // Handle the form submission via AJAX for deleting an item
-        $('form[id^="form_delete_"]').on('submit', function (e) {
-            e.preventDefault();  // Prevent the default form submission
+    function bindFormSubmit() {
+        $('form').off('submit').on('submit', function (e) {
+            e.preventDefault(); // Mencegah form dari reload halaman otomatis
 
             var form = $(this);
-            var actionUrl = form.attr('action');  // URL to delete the cart item
-            var formData = form.serialize();  // Get form data
+            var actionUrl = form.attr('action'); // URL endpoint untuk update atau hapus item
+            var formData = form.serialize(); // Serialize data form
 
             $.ajax({
                 type: "POST",
@@ -271,71 +270,79 @@ Keranjang
                 data: formData,
                 success: function (response) {
                     if (response.success) {
-                        // Reload the cart section, summary, and total without reloading the entire page
+                        // Muat ulang bagian keranjang, summary, dan total secara dinamis
                         $('#cart-section').load(location.href + " #cart-section > *", function () {
-                            bindFormSubmit();  // Rebind form submit handler after content update
+                            setTimeout(function () {
+                                $('#cart-section').find('.card').css('weight', 'auto');
+                            }, 100); // Penundaan untuk penyesuaian gaya
+
+                            // Jika bagian keranjang kosong, reload halaman
+                            if ($('#cart-section').html().trim() === '') {
+                                location.reload();
+                            } else {
+                                bindFormSubmit();
+                            }
                         });
 
-                        $('#summarry').load(location.href + " #summarry > *", function () {
-                            bindFormSubmit();  // Rebind form submit handler after content update
+                        $('#summarry').load(location.href + " #summarry", function () {
+                            setTimeout(function () {
+                                $('#summarry').find('.card').css('height', 'auto');
+                            }, 100); // Penundaan untuk penyesuaian gaya
+                            bindFormSubmit(); // Bind ulang form submit handler jika ada perubahan
                         });
 
                         $('#grandTotal').load(location.href + " #grandTotal > *", function () {
-                            bindFormSubmit();  // Rebind form submit handler after content update
+                            setTimeout(function () {
+                                $('#grandTotal').find('.d-flex').css('display', 'flex'); 
+                                $('#grandTotal').find('h5').addClass('text-black'); 
+                            }, 100); 
+                            bindFormSubmit(); 
                         });
+
+                       
+                        updateNavbarCartCount();
+
                     } else {
-                        alert('Error: ' + response.error);  // Show error message if something went wrong
+                        alert(response.error || "Terjadi kesalahan.");
                     }
                 },
                 error: function (xhr, status, error) {
-                    console.error(error);
-                    alert('An error occurred. Please try again.');  // Handle AJAX error
+                    console.error("AJAX error:", error);
+                    alert('Terjadi kesalahan. Silakan coba lagi.');
                 }
             });
         });
+    }
 
-        // Handle the form submission via AJAX for updating the cart item
-        function bindFormSubmit() {
-            $('form').off('submit').on('submit', function (e) {
-                e.preventDefault(); // Prevent page reload on submit
-
-                var form = $(this);
-                var actionUrl = form.attr('action'); // URL endpoint to update or delete item
-                var formData = form.serialize(); // Serialize form data
-
-                $.ajax({
-                    type: "POST",
-                    url: actionUrl,
-                    data: formData,
-                    success: function (response) {
-                        if (response.success) {
-                            // Reload the cart section and other necessary parts of the page
-                            $('#cart-section').load(location.href + " #cart-section > *", function () {
-                                bindFormSubmit(); // Rebind form submit handler after content update
-                            });
-
-                            $('#summarry').load(location.href + " #summarry > *", function () {
-                                bindFormSubmit(); // Rebind form submit handler after content update
-                            });
-
-                            $('#grandTotal').load(location.href + " #grandTotal > *", function () {
-                                bindFormSubmit(); // Rebind form submit handler after content update
-                            });
-                        } else {
-                            alert(response.error || "Terjadi kesalahan.");
-                        }
-                    },
-                    error: function (xhr, status, error) {
-                        console.error("AJAX error:", error);
-                        alert('Terjadi kesalahan. Silakan coba lagi.');
-                    }
-                });
-            });
-        }
-
-        // Initially bind the form submit handler for all forms, including update and delete
+    function updateNavbarCartCount() {
+        // Melakukan request AJAX untuk mendapatkan jumlah item terbaru di keranjang
+        $.ajax({
+            type: "GET",
+            url: "/get-cart-count", // Endpoint untuk mengambil jumlah keranjang
+            success: function (response) {
+                if (response.cart_count !== undefined) {
+                    // Memperbarui jumlah item keranjang di navbar
+                    $('#cartCount').text(response.cart_count); // Misalnya elemen dengan id 'navbar-cart-count'
+                } else {
+                    console.error("Gagal mengambil jumlah keranjang yang diperbarui");
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error("Terjadi kesalahan saat mengambil jumlah keranjang:", error);
+            }
+        });
+    }
+    function updateShippingCost(shippingCost) {
+        // Perbarui elemen shipping cost
+        $("#shippingCost").text(formatCurrency(shippingCost));  // Misalnya elemen dengan id 'shippingCost'
+    }
+    $(document).ready(function () {
+        // Bind submit handler untuk semua form
         bindFormSubmit();
     });
-</script>
 
+
+
+
+</script>
 {% endblock %}
