@@ -282,64 +282,183 @@
 /*** service End ***/
 
 
-/*** Fruits Start ***/
-.fruite .tab-class .nav-item a.active {
-    background: var(--bs-secondary) !important;
-    border-radius: 5px;
-    /* Tambahan untuk sedikit sudut lembut */
-}
-
-.fruite .tab-class .nav-item a.active span {
-    color: var(--bs-white) !important;
-    font-weight: bold;
-    /* Menonjolkan teks aktif */
-}
-
-.fruite .fruite-categorie .fruite-name {
-    line-height: 40px;
-    font-size: 1.1rem;
-    /* Sedikit memperbesar ukuran teks */
-}
-
-.fruite .fruite-categorie .fruite-name a {
-    transition: color 0.3s ease;
-    /* Efek transisi lebih halus */
-}
-
-.fruite .fruite-categorie .fruite-name a:hover {
-    color: var(--bs-secondary);
-    text-decoration: underline;
-    /* Menambahkan garis bawah saat hover */
-}
-
-.fruite .fruite-item {
-    height: 100%;
-    transition: box-shadow 0.3s ease, transform 0.3s ease;
-    /* Tambahan efek transisi */
-}
-
-.fruite .fruite-item:hover {
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-    transform: translateY(-5px);
-    /* Efek melayang */
-}
-
-.fruite .fruite-item .fruite-img {
+/* Card Produk */
+.frute-item {
+    position: relative;
     overflow: hidden;
-    transition: transform 0.3s ease, border-radius 0.3s ease;
-    border-radius: 10px 10px 0 0;
+    border-radius: 10px;
+    transition: transform 0.3s ease-in-out;
 }
 
-.fruite .fruite-item .fruite-img img {
-    transition: transform 0.3s ease;
+.frute-item:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.fruite .fruite-item .fruite-img img:hover {
-    transform: scale(1.2);
-    /* Sedikit kurangi skala agar tidak terlalu besar */
+/* Gambar Produk */
+.frute-item .fruite-img {
+    transition: transform 0.3s ease-in-out;
 }
 
-/*** Fruits End ***/
+.frute-item:hover .fruite-img {
+    transform: scale(1.1);
+    /* Memperbesar gambar produk saat hover */
+}
+
+.frute-item .text-white {
+    transition: background-color 0.3s ease;
+}
+
+.frute-item:hover .text-white {
+    background-color: rgba(0, 0, 0, 0.7);
+    /* Menggelapkan kategori saat hover */
+}
+
+/* Konten dalam Card */
+.frute-item .p-4 {
+    padding: 20px;
+    background-color: #fff;
+    transition: background-color 0.3s ease;
+}
+
+.frute-item:hover .p-4 {
+    background-color: #f8f9fa;
+    /* Memberikan warna latar belakang lebih terang saat hover */
+}
+
+.frute-item .p-4 h5 {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.frute-item .p-4 p {
+    color: #555;
+    font-size: 1rem;
+}
+
+/* Badge Kategori */
+.frute-item .text-white {
+    background-color: #6c757d;
+    font-size: 0.9rem;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+.frute-item .text-white span {
+    font-size: 0.8rem;
+}
+
+/* Modal Produk */
+.modal-content {
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Konten Modal */
+.modal-body h4 {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.modal-body .fw-bold {
+    color: #333;
+}
+
+.modal-body p {
+    font-size: 1rem;
+    color: #555;
+}
+
+/* Input Quantity */
+.input-group.quantity {
+    width: 40%;
+    margin-bottom: 15px;
+}
+
+.input-group-btn {
+    display: flex;
+    align-items: center;
+}
+
+.qty {
+    width: 60px;
+    text-align: center;
+}
+
+/* Tombol Plus dan Minus */
+.btn-plus,
+.btn-minus {
+    font-size: 1.2rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.btn-plus {
+    background-color: #007bff;
+    border-radius: 50%;
+    color: white;
+}
+
+.btn-minus {
+    background-color: #dc3545;
+    border-radius: 50%;
+    color: white;
+}
+
+.btn-plus:disabled,
+.btn-minus:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* Tombol Keranjang */
+.modal-body .btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px;
+    font-weight: 500;
+    
+    color: white;
+    border: none;
+    border-radius: 25px;
+}
+
+
+/* Responsif untuk tampilan layar kecil */
+@media (max-width: 768px) {
+    .frute-item {
+        margin-bottom: 20px;
+    }
+
+    .frute-item .p-4 {
+        padding: 15px;
+    }
+
+    .modal-dialog {
+        max-width: 90%;
+    }
+}
+
+@media (max-width: 576px) {
+    .frute-item .p-4 h5 {
+        font-size: 1rem;
+    }
+
+    .frute-item .p-4 p {
+        font-size: 0.9rem;
+    }
+}
+
+.kategori-slider-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
 
 
 /*** vesitable Start ***/
@@ -557,7 +676,8 @@
 
 .map-responsive {
     position: relative;
-    padding-bottom: 45.25%; /* 16:9 aspect ratio */
+    padding-bottom: 45.25%;
+    /* 16:9 aspect ratio */
     height: 0;
     overflow: hidden;
 }

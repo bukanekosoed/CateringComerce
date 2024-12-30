@@ -2,7 +2,7 @@
 {% if page == 'produk' %}
 <div class="container-fluid fruite">
     <div class="container py-2">
-        <div class="tab-class text-center">
+        <div class="tab-class ">
             <div class="row g-4">
                 <div class="col-lg-10 text-start">
                     <h2>Produk Kami</h2>
@@ -15,7 +15,7 @@
 
                     {% for item in produk %}
                     <!-- Product Item Start -->
-                    <div class="col-6 col-md-4 col-lg-3">
+                    <div class="col-6 col-md-4 col-lg-2">
                         <a href="" data-bs-toggle="modal" data-bs-target="#productModal{{ item.id }}">
 
                             <div class="rounded position-relative fruite-item">
@@ -25,10 +25,10 @@
                                         alt="{{item.produkNama}}">
                                 </div>
                                 <div class="text-white bg-secondary px-3 py-1 rounded position-absolute"
-                                    style="top: 10px; left: 10px;">{{item.kategori.kategoriNama}}</div>
+                                    style="top: 10px; left: 10px;"><small>{{item.kategori.kategoriNama}}</small></div>
                                 <div class="p-4 border border-secondary border-top-0 rounded-bottom text-start">
-                                    <h5>{{item.produkNama}}</h5>
-                                    <p class="text-dark fs-5 mb-0">{{item.produkHarga | idr}}</p>
+                                    <h6>{{item.produkNama}}</h6>
+                                    <p class="text-dark  mb-0">{{item.produkHarga | idr}}</p>
 
                                 </div>
                             </div>
@@ -56,6 +56,7 @@
                                             <div class="col-lg-6">
                                                 <h4 class="fw-bold mb-3">{{ item.produkNama }}</h4>
                                                 <p class="mb-3">Kategori: {{ item.kategori.kategoriNama }}</p>
+                                                <p class="mb-3">Minimal Pebelian: {{ item.minPembelian }}</p>
                                                 <h5 class="fw-bold mb-3">{{ item.produkHarga | idr }}</h5>
 
                                                 <!-- Variants Option Start -->
@@ -109,6 +110,7 @@
                             </div>
                         </div>
                     </div>
+
                     {% endfor %}
                 </div>
             </div>
@@ -170,10 +172,10 @@
                                         alt="{{item.produkNama}}">
                                 </div>
                                 <div class="text-white bg-secondary px-3 py-1 rounded position-absolute"
-                                    style="top: 10px; left: 10px;">{{item.kategori.kategoriNama}}</div>
+                                    style="top: 10px; left: 10px;"><small>{{item.kategori.kategoriNama}}</small></div>
                                 <div class="p-4 border border-secondary border-top-0 rounded-bottom text-start">
-                                    <h5>{{item.produkNama}}</h5>
-                                    <p class="text-dark fs-5 mb-0">{{item.produkHarga | idr}}</p>
+                                    <h6>{{item.produkNama}}</h6>
+                                    <p class="text-dark  mb-0">{{item.produkHarga | idr}}</p>
 
                                 </div>
                             </div>
@@ -200,6 +202,7 @@
                                             <div class="col-lg-6">
                                                 <h4 class="fw-bold mb-3">{{ item.produkNama }}</h4>
                                                 <p class="mb-3">Kategori: {{ item.kategori.kategoriNama }}</p>
+                                                <p class="mb-3">Minimal Pebelian: {{ item.minPembelian }}</p>
                                                 <h5 class="fw-bold mb-3">{{ item.produkHarga | idr }}</h5>
 
                                                 <!-- Variants Option Start -->
@@ -254,24 +257,7 @@
                         </div>
                     </div>
 
-                    <script>
-                        // Handle quantity increase and decrease
-                        document.getElementById("plusBtn{{ item.id }}").addEventListener("click", function () {
-                            var qtyInput = document.getElementById("quantity{{ item.id }}");
-                            var currentQty = parseInt(qtyInput.value);
-                            var minQty = parseInt(qtyInput.min);
-                            qtyInput.value = currentQty + 1;
-                        });
 
-                        document.getElementById("minusBtn{{ item.id }}").addEventListener("click", function () {
-                            var qtyInput = document.getElementById("quantity{{ item.id }}");
-                            var currentQty = parseInt(qtyInput.value);
-                            var minQty = parseInt(qtyInput.min);
-                            if (currentQty > minQty) {
-                                qtyInput.value = currentQty - 1;
-                            }
-                        });
-                    </script>
 
 
 
@@ -312,6 +298,7 @@
             var minValue = parseInt(input.attr('min'));
             var currentValue = parseInt(input.val());
 
+            // Disable minus button if current value is less than or equal to minValue
             if (currentValue <= minValue) {
                 $(`#${modalId} .btn-minus`).attr('disabled', true);
             } else {
@@ -319,43 +306,46 @@
             }
         }
 
-        // Setel tombol minus saat halaman dimuat
+        // Set initial state for minus button when page loads
         $('[id^=productModal]').each(function () {
             var modalId = $(this).attr('id');
             updateMinusButton(modalId);
         });
 
-        // Event listener untuk tombol plus
+        // Event listener for the plus button
         $('.btn-plus').click(function () {
             var input = $(this).closest('.quantity').find('.qty');
             var currentValue = parseInt(input.val());
 
+            // Add one to the current value when the plus button is clicked
+            input.val(currentValue + 1);
 
-            // Perbarui status tombol minus
+            // Update the minus button state
             var modalId = $(this).closest('.modal').attr('id');
             updateMinusButton(modalId);
         });
 
-        // Event listener untuk tombol minus
+        // Event listener for the minus button
         $('.btn-minus').click(function () {
             var input = $(this).closest('.quantity').find('.qty');
             var currentValue = parseInt(input.val());
-            if (currentValue > parseInt(input.attr('min'))) {
+            var minValue = parseInt(input.attr('min'));
+
+            // Decrease the value only if it's greater than the minimum
+            if (currentValue > minValue) {
                 input.val(currentValue - 1);
             }
 
-            // Perbarui status tombol minus
+            // Update the minus button state
             var modalId = $(this).closest('.modal').attr('id');
             updateMinusButton(modalId);
         });
 
-        // Tambahkan event listener untuk input perubahan manual oleh pengguna
+        // Event listener for input changes
         $('.qty').on('input change', function () {
             var modalId = $(this).closest('.modal').attr('id');
             updateMinusButton(modalId);
         });
     });
-
-
 
 </script>

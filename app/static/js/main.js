@@ -11,21 +11,7 @@ $(document).ready(function () {
   };
   spinner();
 
-  // Product Quantity
-  $(".quantity button").on("click", function () {
-    var button = $(this);
-    var input = button.closest(".quantity").find("input");
-    var oldValue = parseFloat(input.val()) || 0; // Nilai lama, default 0 jika kosong
-    var newVal;
 
-    if (button.hasClass("btn-plus")) {
-      newVal = oldValue + 1;
-    } else {
-      newVal = oldValue > 0 ? oldValue - 1 : 0;
-    }
-
-    input.val(newVal); // Perbarui nilai input
-  });
 
   function formatCurrency(value) {
     
