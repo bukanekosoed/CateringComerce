@@ -84,7 +84,7 @@ def create_app():
     def ensure_logged_in():
         # Mengecek apakah user sudah login
         # Cek apakah user_id ada di session dan jika request bukan halaman login/register/main
-        if 'user_id' not in session and request.endpoint not in ['auth.login', 'auth.register', 'main.index', 'main.shop', 'main.berita'] and not request.path.startswith('/static/'):
+        if 'user_id' not in session and request.endpoint not in ['auth.login', 'auth.register', 'main.index', 'main.shop', 'main.berita','main.detail','image.image','main.profile','main.add_to_cart'] and not request.path.startswith('/static/'):
             flash('User not logged in.', 'warning')
             return redirect(url_for('main.index'))  # Redirect ke halaman index jika user belum login
 

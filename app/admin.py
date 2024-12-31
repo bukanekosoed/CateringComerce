@@ -112,13 +112,13 @@ def tambah_produk():
         if harga <= 0:
             flash('Harga produk tidak boleh kurang dari atau sama dengan 0.', 'danger')
             session['old_data'] = old_data
-            session['old_image_id'] = session.get('old_image_id', None)  # Simpan gambar lama ke session
+           
             return redirect(url_for('admin.tambah_produk'))
 
         if minPembelian < 1:
             flash('Kuantitas minimal adalah 1.', 'danger')
             session['old_data'] = old_data
-            session['old_image_id'] = session.get('old_image_id', None)  # Simpan gambar lama ke session
+           
             return redirect(url_for('admin.tambah_produk'))
 
         # Validasi apakah produk sudah ada
@@ -126,7 +126,7 @@ def tambah_produk():
         if existing_product:
             flash('Nama produk sudah ada, gunakan nama lain.', 'danger')
             session['old_data'] = old_data
-            session['old_image_id'] = session.get('old_image_id', None)  # Simpan gambar lama ke session
+           
             return redirect(url_for('admin.tambah_produk'))
 
         # Menyimpan produk baru
@@ -142,15 +142,15 @@ def tambah_produk():
         # Menyimpan gambar produk jika ada
         if gambar:
             filename = secure_filename(gambar.filename)
-            fs = gridfs.GridFS(product.db)  # Menggunakan GridFS pada database produk yang digunakan
-            file_id = fs.put(gambar, filename=filename, content_type=gambar.content_type)  # Menyimpan gambar
+            
 
-            # Menyimpan ID gambar ke field produkGambar
-            product.produkGambar = file_id
+            # Menyimpan gambar ke GridFS menggunakan ImageField
+            product.produkGambar.put(gambar, content_type=gambar.content_type)
+
+            # Simpan perubahan pada produk setelah gambar berhasil di-upload
             product.save()
-
             # Menyimpan ID gambar dalam session untuk old image
-            session['old_image_id'] = product.produkGambar
+            
 
         flash('Produk berhasil ditambahkan!', 'success')
         session.pop('old_data', None)  # Hapus old_data setelah berhasil
