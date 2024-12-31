@@ -93,7 +93,9 @@
                                             alt="{{ item.product.produkNama }}" class="rounded me-2"
                                             style="width: 40px; height: 40px; object-fit: cover;">
                                         <div>
-                                            <small><strong>{{ item.product.produkNama }}</strong></small><br>
+                                            <small><strong>{{ item.product.produkNama }} {% if item.variant %}
+                                               - {{ item.variant }}
+                                               {% endif %}</strong></small><br>
                                             <small class="text-muted">Jumlah: {{ item.quantity }}</small>
                                         </div>
                                     </div>

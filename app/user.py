@@ -21,6 +21,7 @@ from babel.dates import format_datetime
 from midtransclient import Snap
 from openlocationcode import openlocationcode as olc
 import pdfkit
+from flask_cors import cross_origin
 
 
 load_dotenv()
@@ -748,6 +749,7 @@ def get_snap_token(order_id):
     
 # Webhook Midtrans
 @user_bp.route('/midtrans_webhook', methods=['POST'])
+@cross_origin()
 def midtrans_webhook():
     webhook_data = request.get_json()
 
