@@ -125,10 +125,10 @@ Riwayat Pemesanan
             if (snapToken) {
                 snap.pay(snapToken, {
                     onSuccess: function (result) {
-                        window.location.href = "/order";
+                        window.location.href = "/pesanan";
                     },
                     onPending: function (result) {
-                        window.location.href = "/order";
+                        window.location.href = "/pesanan";
                     },
                     onError: function (result) {
                         alert('Pembayaran gagal!');
